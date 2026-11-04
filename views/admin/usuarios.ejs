@@ -1,0 +1,129 @@
+<%- include('../partials/header') %>
+
+<a href="/admin" class="small">&larr; Panel admin</a>
+<h1 class="mt-2 mb-3">Usuarios</h1>
+
+<div class="row g-3">
+       <div class="col-lg-8">
+        <div class="glass p-3">
+            <div class="input-icon mb-3">
+                <i class="bi bi-search"></i>
+                <input type="search" id="buscador" class="form-control" placeholder="Buscar por nombre o correo…">
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0" id="tablaUsuarios">
+                    <thead><tr><th>Usuario</th><th>Rol</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+                    <tbody>
+                    <% lista.forEach(u => { %>
+                        <tr data-buscar="<%= (u.nombre + ' ' + u.correo).toLowerCase() %>">
+                            <td><%= u.nombre %><div class="small text-muted-eco"><%= u.correo %></div></td>
+                            <td>
+                                <form action="/admin/usuarios/<%= u.ID_usuario %>" method="POST" class="d-flex gap-1"
+                                      data-confirmar="¿Cambiar el rol de <%= u.nombre %>?">
+                                    <select name="ID_rol" class="form-select form-select-sm" <%= u.estado === 'Baja' ? 'disabled' : '' %>>
+                                        <% roles.forEach(r => { %>
+                                            <option value="<%= r.ID_rol %>" <%= r.ID_rol === u.ID_rol ? 'selected' : '' %>><%= r.nombre_rol %></option>
+                                        <% }) %>
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-eco" <%= u.estado === 'Baja' ? 'disabled' : '' %>><i class="bi bi-check-lg"></i></button>
+                                </form>
+                            </td>
+                            <td>
+                                <% if (u.estado === 'Activo') { %><span class="badge text-bg-success">Activo</span>
+                                <% } else if (u.estado === 'Inactivo') { %><span class="badge text-bg-warning">Suspendido</span>
+                                <% } else { %><span class="badge text-bg-secondary">De baja</span><% } %>
+                            </td>
+                            <td class="text-end">
+                                <% if (u.estado !== 'Baja') { %>
+                                <div class="d-inline-flex gap-1">
+                                    <form action="/admin/usuarios/<%= u.ID_usuario %>/estado" method="POST"
+                                          data-confirmar="<%= u.estado === 'Activo' ? '¿Suspender la cuenta de ' : '¿Reactivar la cuenta de ' %><%= u.nombre %>?">
+                                        <input type="hidden" name="estado" value="<%= u.estado === 'Activo' ? 'Inactivo' : 'Activo' %>">
+                                        <button class="btn btn-sm btn-outline-light"><%= u.estado === 'Activo' ? 'Suspender' : 'Reactivar' %></button>
+                                    </form>
+                                    <form action="/admin/usuarios/<%= u.ID_usuario %>/delete" method="POST"
+                                          data-confirmar="¿Dar de baja a <%= u.nombre %>? Perderá el acceso de forma permanente, pero su historial se conserva.">
+                                        <button class="btn btn-sm btn-outline-danger" title="Dar de baja"><i class="bi bi-person-x"></i></button>
+                                    </form>
+                                </div>
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <p id="sinResultados" class="text-muted-eco text-center mt-3 mb-0 d-none">No hay usuarios que coincidan.</p>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <form action="/admin/usuarios" method="POST" class="glass p-3">
+            <h4>Nuevo usuario</h4>
+            <div class="mb-2"><label class="form-label">Nombre</label><input name="nombre" class="form-control" required></div>
+            <div class="mb-2"><label class="form-label">Correo</label><input type="email" name="correo" class="form-control" required></div>
+            <div class="mb-2"><label class="form-label">Contraseña</label><input type="password" name="contrasena" minlength="6" class="form-control" required></div>
+            <div class="mb-3"><label class="form-label">Rol</label>
+                <select name="ID_rol" class="form-select">
+                    <% roles.forEach(r => { %><option value="<%= r.ID_rol %>"><%= r.nombre_rol %></option><% }) %>
+                </select></div>
+            <button class="btn btn-eco w-100">Crear</button>
+        </form>
+    </div>
+</div>
+
+<!-- Ventana de confirmación (una sola para todas las acciones) -->
+<div class="modal fade" id="modalConfirmar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass" style="background-color: var(--popover)">
+            <div class="modal-body p-4">
+                <h5 class="mb-2">Confirmar acción</h5>
+                <p id="modalTexto" class="text-muted-eco mb-4"></p>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-eco" id="modalAceptar">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Se espera a DOMContentLoaded porque Bootstrap se carga al final de la página
+document.addEventListener('DOMContentLoaded', () => {
+    // 1) Buscador en tiempo real: oculta las filas que no coinciden
+    const buscador = document.getElementById('buscador');
+    const filas = document.querySelectorAll('#tablaUsuarios tbody tr');
+    const vacio = document.getElementById('sinResultados');
+    buscador.addEventListener('input', () => {
+        const texto = buscador.value.trim().toLowerCase();
+        let visibles = 0;
+        filas.forEach((fila) => {
+            const coincide = fila.dataset.buscar.includes(texto);
+            fila.classList.toggle('d-none', !coincide);
+            if (coincide) visibles++;
+        });
+        vacio.classList.toggle('d-none', visibles > 0);
+    });
+
+    // 2) Confirmación antes de cualquier acción crítica
+    const elementoModal = document.getElementById('modalConfirmar');
+    document.body.append(elementoModal);
+    const modal = new bootstrap.Modal(elementoModal);
+    const textoModal = document.getElementById('modalTexto');
+    let formPendiente = null;
+
+    document.querySelectorAll('form[data-confirmar]').forEach((form) => {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();                        // frena el envío
+            formPendiente = form;
+            textoModal.textContent = form.dataset.confirmar;
+            modal.show();
+        });
+    });
+    document.getElementById('modalAceptar').addEventListener('click', () => {
+        if (formPendiente) formPendiente.submit();     // submit() no vuelve a disparar el evento
+    });
+});
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,33 @@
+<%
+  const enlace = (href, txt) => `<a href="${href}" class="${ruta === href ? 'active' : ''}">${txt}</a>`;
+%>
+<div class="public-bg">
+    <img class="bg-img" src="/img/greenhouse-bg.jpg" alt="Invernadero futurista iluminado con luz verde">
+    <div class="bg-tint eco-mesh"></div>
+    <div class="bg-fade"></div>
+    <div class="particles" data-count="30"></div>
+    <span class="leaf-deco" style="left:-2.5rem; top:5rem;">🌿</span>
+    <span class="leaf-deco" style="right:-1.5rem; bottom:4rem; animation-delay:1.8s;">🍃</span>
+
+    <header class="public-top">
+        <a href="/" class="d-flex align-items-center gap-2 text-decoration-none">
+            <img class="eco-logo" src="/img/logo.svg" width="34" height="34" alt="EcoGrow">
+            <span class="eco-wordmark">Eco<span class="gradient-text">Grow</span></span>
+        </a>
+        <nav class="links">
+            <span class="d-none d-sm-inline-flex gap-4">
+                <%- enlace('/', 'Inicio') %>
+                <%- enlace('/nosotros', '¿Qué es EcoGrow?') %>
+                <%- enlace('/contacto', 'Contacto') %>
+            </span>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="theme-toggle theme-toggle-sm" data-theme-toggle aria-label="Cambiar tema">
+                    <i class="bi bi-sun-fill theme-toggle-icon"></i>
+                    <span class="theme-name">Doki</span>
+                </button>
+                <a class="btn btn-eco btn-sm px-3" href="/login" style="color:var(--primary-foreground)">Iniciar sesión</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="public-main"><div class="inner">

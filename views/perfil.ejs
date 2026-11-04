@@ -1,0 +1,36 @@
+<%- include('partials/header') %>
+<div class="mb-4"><h1>Mi perfil</h1><p class="text-muted-eco">Administra tus datos personales de EcoGrow.</p></div>
+<div class="row g-3">
+    <div class="col-lg-4"><div class="glass p-4 text-center h-100">
+        <% if (perfil.imagen_perfil) { %>
+            <img src="<%= perfil.imagen_perfil %>" class="profile-image mx-auto mb-3" alt="Imagen de perfil">
+        <% } else { %>
+            <div class="avatar mx-auto mb-3" style="width:5rem;height:5rem;font-size:1.6rem"><%= perfil.nombre.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase() %></div>
+        <% } %>
+        <h4><%= perfil.nombre %></h4><p class="text-muted-eco mb-0"><%= perfil.correo %></p><small class="text-muted-eco">Miembro desde <%= new Date(perfil.fecha_registro).toLocaleDateString('es-CL') %></small>
+    </div></div>
+    <div class="col-lg-8"><form id="profile-form" action="/app/perfil" method="POST" class="glass p-4">
+        <label class="form-label">Nombre</label><input class="form-control mb-3" name="nombre" value="<%= perfil.nombre %>" required>
+        <label class="form-label">Correo electrónico</label><input class="form-control mb-3" type="email" name="correo" value="<%= perfil.correo %>" required>
+        <label class="form-label" for="imagen-archivo">Imagen de perfil</label>
+        <input id="imagen-archivo" class="form-control mb-2" type="file" accept="image/png,image/jpeg,image/webp">
+        <input type="hidden" name="imagen_perfil" id="imagen-perfil" value="<%= perfil.imagen_perfil || '' %>">
+        <div class="form-text mb-3">PNG, JPG o WEBP. Máximo 3 MB.</div>
+        <button class="btn btn-eco">Guardar cambios</button>
+    </form></div>
+</div>
+<script>
+    document.getElementById('imagen-archivo').addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (file.size > 3 * 1024 * 1024) {
+            event.target.value = '';
+            alert('La imagen no puede superar 3 MB.');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => { document.getElementById('imagen-perfil').value = reader.result; };
+        reader.readAsDataURL(file);
+    });
+</script>
+<%- include('partials/footer') %>

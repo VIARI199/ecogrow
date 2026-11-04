@@ -1,0 +1,63 @@
+<%- include('../partials/header') %>
+
+<div class="public-center">
+<div class="w-100">
+    <div class="text-center mb-4">
+        <img class="eco-logo float" src="/img/logo.svg" width="62" height="62" alt="EcoGrow">
+        <h1 class="mt-3 mb-1" style="font-size:2.2rem">Eco<span class="gradient-text">Grow</span></h1>
+        <p class="text-muted-eco small mb-0">Tecnología que entiende tus plantas.</p>
+    </div>
+
+    <div class="auth-box glass p-4 p-md-5">
+        <form action="/login" method="POST">
+            <div class="mb-3">
+                <label class="form-label" for="correo">Correo electrónico</label>
+                <div class="input-icon">
+                    <i class="bi bi-envelope"></i>
+                    <input type="email" id="correo" name="correo" class="form-control" placeholder="tu@correo.com" required>
+                </div>
+            </div>
+            
+            <div class="mb-2">
+                <label class="form-label" for="contrasena">Contraseña</label>
+                <div class="input-icon">
+                    <i class="bi bi-lock"></i>
+                    <input type="password" id="contrasena" name="contrasena" class="form-control pe-5" placeholder="••••••••" required>
+                    <button type="button" data-toggle-pass="#contrasena" class="btn p-0 border-0 position-absolute top-50 translate-middle-y text-muted-eco" style="right:.9rem" aria-label="Mostrar contraseña"><i class="bi bi-eye"></i></button>
+                </div>
+            </div>
+
+            <!-- ENLACE RECUPERAR CONTRASEÑA -->
+            <div class="d-flex justify-content-end mb-4">
+                <a href="/olvide-contrasena" class="small text-muted-eco text-decoration-none">¿Olvidaste tu contraseña?</a>
+            </div>
+
+            <button class="btn btn-eco w-100 py-2" style="color:var(--primary-foreground)">Iniciar sesión</button>
+            <a href="/registro" class="btn btn-outline-eco w-100 py-2 mt-2">Crear cuenta</a>
+        </form>
+
+        <% if (googleClientId) { %>
+        <div class="divider-text">o continúa con</div>
+        <div class="d-flex justify-content-center">
+            <div id="g_id_onload"
+                 data-client_id="<%= googleClientId %>"
+                 data-login_uri="/auth/google"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="pill"
+                 data-theme="filled_black"
+                 data-text="signin_with"
+                 data-size="large"
+                 data-logo_alignment="left">
+            </div>
+        </div>
+        <% } %>
+    </div>
+
+    <p class="text-center small text-muted-eco mt-4"><i class="bi bi-stars text-eco"></i> Monitoreo IoT en tiempo real · ESP32</p>
+</div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,24 @@
+const express = require('express');
+const router = express.Router();
+const c = require('../controllers/adminController');
+
+router.get('/', c.index);
+router.get('/usuarios', c.usuarios);
+router.post('/usuarios', c.storeUsuario);
+router.post('/usuarios/:id', c.updateUsuario);
+router.post('/usuarios/:id/estado', c.cambiarEstado);  
+router.post('/usuarios/:id/delete', c.destroyUsuario);
+router.get('/auditoria', c.auditoria);
+router.get('/auditoria/exportar', c.exportarAuditoria);
+router.get('/reportes', c.reportes);
+router.get('/reportes/lecturas', c.reporteLecturas);
+router.get('/reportes/usuarios', c.reporteUsuarios);
+router.get('/automatizacion', c.automatizacion);
+router.post('/automatizacion/umbrales', c.guardarUmbrales);
+router.post('/automatizacion/actuadores/:id', c.controlarActuador);
+router.get('/catalogo', c.catalogo);
+router.post('/catalogo/sensores/:id', c.editarSensor);
+router.get('/asignaciones', c.asignaciones);
+router.post('/asignaciones', c.asignarInvernadero);
+router.post('/asignaciones/:idUsuario/:idInvernadero/delete', c.quitarAsignacion);
+module.exports = router;

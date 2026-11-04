@@ -1,0 +1,36 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Invernaderos</h1>
+    <a href="<%= baseUrl %>/create" class="btn btn-eco"><i class="bi bi-plus-lg"></i> Nuevo invernadero</a>
+</div>
+
+<% if (invernaderos.length === 0) { %>
+    <div class="glass empty-state">🌱 Todavía no tienes invernaderos registrados.</div>
+<% } %>
+
+<div class="row g-3">
+<% invernaderos.forEach(i => { %>
+    <div class="col-md-6 col-lg-4">
+        <div class="card glass h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h4 class="card-title"><%= i.nombre %></h4>
+                    <span><span class="dot <%= i.estado === 'Activo' ? 'dot-ok' : i.estado === 'Inactivo' ? 'dot-crit' : 'dot-warn' %>"></span><%= i.estado %></span>
+                </div>
+                <p class="text-muted-eco mb-1"><i class="bi bi-geo-alt"></i> <%= i.ubicacion %></p>
+                <p class="small text-muted-eco"><%= i.descripcion || 'Sin descripción' %></p>
+                <p class="small mb-3"><%= i.total_zonas %> zona(s)</p>
+                <a href="<%= baseUrl %>/<%= i.ID_invernadero %>" class="btn btn-sm btn-outline-eco">Ver</a>
+                <a href="<%= baseUrl %>/<%= i.ID_invernadero %>/edit" class="btn btn-sm btn-outline-light">Editar</a>
+                <form action="<%= baseUrl %>/<%= i.ID_invernadero %>/delete" method="POST" class="d-inline"
+                      onsubmit="return confirm('¿Eliminar este invernadero?')">
+                    <button class="btn btn-sm btn-outline-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+<% }) %>
+</div>
+
+<%- include('../partials/footer') %>

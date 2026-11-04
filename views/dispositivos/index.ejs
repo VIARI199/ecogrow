@@ -1,0 +1,36 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Dispositivos ESP32</h1>
+    <a href="/dispositivos/create" class="btn btn-eco"><i class="bi bi-plus-lg"></i> Registrar ESP32</a>
+</div>
+
+<div class="glass p-3 table-responsive">
+<% if (dispositivos.length === 0) { %>
+    <div class="empty-state">📡 No hay dispositivos registrados.</div>
+<% } else { %>
+    <table class="table align-middle mb-0">
+        <thead><tr><th>Nombre</th><th>MAC</th><th>Ubicación</th><th>Sensores</th><th>Estado</th><th>Última conexión</th><th></th></tr></thead>
+        <tbody>
+        <% dispositivos.forEach(d => { %>
+            <tr>
+                <td><a href="/dispositivos/<%= d.ID_dispositivo %>"><%= d.nombre %></a><div class="small text-muted-eco"><%= d.tipo_controlador %> · <%= d.firmware_version %></div></td>
+                <td><code><%= d.mac_address %></code></td>
+                <td><%= d.invernadero %> · <%= d.nombre_zona %></td>
+                <td><%= d.total_sensores %></td>
+                <td><span class="dot <%= d.estado === 'Online' ? 'dot-ok' : d.estado === 'Offline' ? 'dot-crit' : 'dot-warn' %>"></span><%= d.estado === 'Offline' ? 'Apagado' : d.estado %></td>
+                <td class="small"><%= d.ultima_comunicacion ? new Date(d.ultima_comunicacion).toLocaleString('es-CL') : '—' %></td>
+                <td class="text-end text-nowrap">
+                    <a href="/dispositivos/<%= d.ID_dispositivo %>/edit" class="btn btn-sm btn-outline-light">Editar</a>
+                    <form action="/dispositivos/<%= d.ID_dispositivo %>/delete" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar dispositivo?')">
+                        <button class="btn btn-sm btn-outline-danger">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+        <% }) %>
+        </tbody>
+    </table>
+<% } %>
+</div>
+
+<%- include('../partials/footer') %>

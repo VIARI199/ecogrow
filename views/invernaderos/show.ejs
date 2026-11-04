@@ -1,0 +1,35 @@
+<%- include('../partials/header') %>
+
+<a href="<%= baseUrl %>" class="small">&larr; Volver</a>
+<div class="d-flex justify-content-between align-items-center my-3">
+    <div>
+        <h1 class="mb-0"><%= invernadero.nombre %></h1>
+        <p class="text-muted-eco mb-0"><i class="bi bi-geo-alt"></i> <%= invernadero.ubicacion %> · <%= invernadero.estado %></p>
+    </div>
+    <a href="<%= baseUrl === '/app/espacios' ? '/app/zonas' : '/zonas' %>/create?invernadero=<%= invernadero.ID_invernadero %>" class="btn btn-eco"><i class="bi bi-plus-lg"></i> Agregar zona</a>
+</div>
+
+<h4>Mapa del invernadero</h4>
+<% if (zonas.length === 0) { %>
+    <div class="glass empty-state">Este invernadero aún no tiene zonas.</div>
+<% } %>
+<div class="greenhouse-map glass p-3 mb-4">
+    <div class="greenhouse-map-grid">
+    <% zonas.forEach(z => { %>
+        <div class="greenhouse-bed">
+            <div class="zona-tile">
+                <h5><%= z.nombre_zona %></h5>
+                <% if (z.especie) { %>
+                    <span class="dot <%= z.estado_plantacion === 'Cosecha' ? 'dot-warn' : 'dot-ok' %>"></span><%= z.especie %>
+                    <div class="small text-muted-eco"><%= z.estado_plantacion %></div>
+                    <div class="small text-muted-eco mt-2"><%= z.temperatura || '—' %> °C · <%= z.humedad || '—' %> %</div>
+                <% } else { %>
+                    <span class="text-muted-eco small">Sin plantación activa</span>
+                <% } %>
+            </div>
+        </div>
+    <% }) %>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

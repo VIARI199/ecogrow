@@ -1,0 +1,62 @@
+<%- include('partials/header') %>
+
+<div class="mb-4">
+    <h1 class="fs-2 mb-1">¿Necesitas ayuda? 🌱</h1>
+    <p class="text-muted-eco mb-0">Nuestro equipo responde dudas técnicas, de sensores y de instalación.</p>
+</div>
+
+<% if (mensajeExito) { %>
+    <div class="alert alert-success"><%= mensajeExito %></div>
+<% } %>
+
+<div class="row g-3">
+    <!-- Formulario -->
+    <div class="col-lg-8">
+        <form action="/contacto" method="POST" class="glass p-4">
+            <div class="row g-3">
+                <div class="col-sm-6">
+                    <label class="form-label" for="nombre">Nombre</label>
+                    <input type="text" id="nombre" name="nombre" class="form-control" placeholder="Tu nombre" value="<%= datos.nombre || '' %>" required>
+                </div>
+                <div class="col-sm-6">
+                    <label class="form-label" for="correo">Correo</label>
+                    <input type="email" id="correo" name="correo" class="form-control" placeholder="tu@correo.com" value="<%= datos.correo || '' %>" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="asunto">Asunto</label>
+                    <input type="text" id="asunto" name="asunto" class="form-control" placeholder="Problema con el sensor" value="<%= datos.asunto || '' %>" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="mensaje">Mensaje</label>
+                    <textarea id="mensaje" name="mensaje" rows="6" class="form-control" placeholder="Cuéntanos…" required><%= datos.mensaje || '' %></textarea>
+                </div>
+            </div>
+            <button class="btn btn-eco mt-3"><i class="bi bi-send"></i> Enviar mensaje</button>
+        </form>
+    </div>
+
+    <!-- Tarjetas de la derecha -->
+    <div class="col-lg-4 d-flex flex-column gap-3">
+        <div class="glass hover p-4">
+            <h2 class="h6 font-display fw-semibold">Soporte</h2>
+            <p class="mt-3 mb-0 small text-muted-eco d-flex align-items-center gap-2">
+                <i class="bi bi-envelope text-eco"></i> ecogrow.invernadero@gmail.com
+            </p>
+            <div class="d-flex gap-2 mt-3">
+                <a class="icon-btn" href="https://www.instagram.com/ecogrow.greenhouse/" target="_blank" rel="noreferrer" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+                <a class="icon-btn" href="https://github.com/tu_usuario" target="_blank" rel="noreferrer" aria-label="GitHub"><i class="bi bi-github"></i></a>
+            </div>
+        </div>
+
+        <div class="glass hover p-4" style="animation-delay: 80ms">
+            <h2 class="h6 font-display fw-semibold">Sobre EcoGrow</h2>
+            <p class="mt-2 mb-0 small text-muted-eco">
+                Plataforma de monitoreo IoT para plantas e invernaderos. Sensores ESP32, datos en
+                tiempo real y alertas automáticas al servicio de cultivos más sanos.
+            </p>
+            <p class="mt-3 mb-0 text-muted-eco" style="font-size:.75rem">Versión 1.0 · Hecho con 🌱</p>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

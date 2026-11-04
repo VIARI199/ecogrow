@@ -1,0 +1,26 @@
+<%- include('../partials/header') %>
+<%
+  const campo = (name, label, type = 'number', step = '1') =>
+    `<div class="col-md-6 mb-3"><label class="form-label">${label}</label>
+     <input type="${type}" step="${step}" name="${name}" class="form-control" value="${item[name] ?? ''}" required></div>`;
+%>
+
+<div class="col-lg-7 mx-auto">
+    <h1 class="mb-4"><%= item.ID_especie ? 'Editar' : 'Nueva' %> especie</h1>
+    <form action="<%= accion %>" method="POST" class="glass p-4">
+        <div class="row">
+            <%- campo('nombre_comun', 'Nombre común', 'text') %>
+            <%- campo('nombre_cientifico', 'Nombre científico', 'text') %>
+            <%- campo('temp_min', 'Temperatura mínima (°C)', 'number', '0.1') %>
+            <%- campo('temp_max', 'Temperatura máxima (°C)', 'number', '0.1') %>
+            <%- campo('humedad_suelo_min', 'Humedad suelo mínima (%)') %>
+            <%- campo('humedad_suelo_max', 'Humedad suelo máxima (%)') %>
+            <%- campo('luz_min_lux', 'Luz mínima (lux)') %>
+            <%- campo('luz_max_lux', 'Luz máxima (lux)') %>
+        </div>
+        <button class="btn btn-eco">Guardar</button>
+        <a href="/especies" class="btn btn-outline-light">Cancelar</a>
+    </form>
+</div>
+
+<%- include('../partials/footer') %>

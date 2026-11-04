@@ -1,0 +1,80 @@
+<%- include('../partials/header') %>
+
+<h1 class="mb-3">Historial de mediciones</h1>
+
+<form id="historial-filter-form" method="GET" class="glass p-3 d-flex flex-wrap gap-2 align-items-end mb-3">
+    <div>
+        <label class="form-label small">Sensor / variable</label>
+        <select name="metrica" class="form-select" onchange="this.form.submit()">
+            <% metricas.forEach(m => { %>
+                <option value="<%= m.ID_metrica %>" <%= metrica === m.ID_metrica ? 'selected' : '' %>><%= m.nombre %></option>
+            <% }) %>
+        </select>
+    </div>
+    <input type="hidden" name="rango" id="historial-range" value="<%= rango %>">
+    <div class="btn-group">
+        <% ['24h', '7d', '30d'].forEach(r => { %>
+            <button type="button" data-range="<%= r %>" class="btn historial-range-btn <%= rango === r ? 'btn-eco' : 'btn-outline-eco' %>"><%= r %></button>
+        <% }) %>
+    </div>
+</form>
+
+<% if (!resumen || resumen.total == 0) { %>
+    <div class="glass empty-state">📊 No hay lecturas en este periodo.</div>
+<% } else { %>
+    <div class="row g-3 mb-3">
+        <% [['Promedio', resumen.promedio], ['Máximo', resumen.maximo], ['Mínimo', resumen.minimo], ['Lecturas', resumen.total]].forEach(([t, v]) => { %>
+            <div class="col-6 col-md-3"><div class="glass p-3"><div class="small text-muted-eco"><%= t %></div><div class="fs-4 fw-bold"><%= Number(v) %></div></div></div>
+        <% }) %>
+        <div class="col-6 col-md-3"><div class="glass p-3"><div class="small text-muted-eco">Tendencia</div><div class="fs-4 fw-bold"><%= resumen.tendencia === 'subiendo' ? '↗' : resumen.tendencia === 'bajando' ? '↘' : '→' %> <%= resumen.tendencia %></div></div></div>
+    </div>
+
+    <div class="glass p-3 mb-3"><canvas id="grafico" height="110"></canvas></div>
+
+    <div class="glass p-3 table-responsive">
+        <table class="table table-sm mb-0">
+            <thead><tr><th>Fecha y hora</th><th>Valor</th><th></th></tr></thead>
+            <tbody>
+            <% lecturas.slice().reverse().forEach(l => { %>
+                <tr>
+                    <td><%= new Date(l.fecha_hora).toLocaleString('es-CL') %></td>
+                    <td><%= Number(l.valor) %></td>
+                    <td class="text-end">
+                        <form action="/lecturas/<%= l.ID_lectura %>/delete" method="POST" onsubmit="return confirm('¿Eliminar lectura?')">
+                            <button class="btn btn-sm btn-link text-danger p-0"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+            <% }) %>
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script type="application/json" id="datos-json"><%- JSON.stringify(lecturas.map(l => ({ t: new Date(l.fecha_hora).toLocaleString('es-CL'), v: Number(l.valor) }))) %></script>
+    <script>
+        const datos = JSON.parse(document.getElementById('datos-json').textContent);
+        new Chart(document.getElementById('grafico'), {
+            type: 'line',
+            data: {
+                labels: datos.map(d => d.t),
+                datasets: [{ data: datos.map(d => d.v), borderColor: '#5ad664', backgroundColor: 'rgba(90,214,100,.15)', fill: true, tension: .35 }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { x: { ticks: { color: '#8fb5a0' } }, y: { ticks: { color: '#8fb5a0' } } }
+            }
+        });
+    </script>
+<% } %>
+
+<script>
+    document.querySelectorAll('.historial-range-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+            document.getElementById('historial-range').value = button.dataset.range;
+            document.getElementById('historial-filter-form').submit();
+        });
+    });
+</script>
+
+<%- include('../partials/footer') %>

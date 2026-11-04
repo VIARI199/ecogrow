@@ -1,0 +1,85 @@
+<%
+  const item = (href, icon, txt) => {
+      const activo = ruta === href || (href !== '/dashboard' && href !== '/app' && ruta.startsWith(href));
+      return `<a class="nav-eco ${activo ? 'active' : ''}" href="${href}"><i class="bi bi-${icon}"></i><span>${txt}</span></a>`;
+  };
+  const iniciales = usuario.nombre.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
+  const hayOnline = (typeof dispositivosOnline !== 'undefined') && dispositivosOnline > 0;
+%>
+<div class="app-shell eco-mesh">
+    <div class="particles" data-count="14"></div>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-head">
+            <img class="eco-logo" src="/img/logo.svg" width="38" height="38" alt="EcoGrow">
+            <div class="eco-wordmark">Eco<span class="gradient-text">Grow</span><small>Smart Plant Monitoring</small></div>
+        </div>
+        <nav>
+            <%- item('/app', 'house', 'Inicio') %>
+            <div class="nav-label">Cultivos</div>
+            <%- item('/app/espacios', 'buildings', 'Mis espacios') %>
+            <%- item('/app/zonas', 'grid-3x3-gap', 'Zonas') %>
+            <%- item('/especies', 'tree', 'Especies') %>
+            <%- item('/app/plantas', 'flower1', 'Mis plantas') %>
+            <div class="nav-label">Monitoreo</div>
+            <%- item('/app/componentes', 'cpu', 'Componentes') %>
+            <%- item('/app/historial', 'graph-up', 'Historial') %>
+            <%- item('/app/alertas', 'bell', 'Alertas') %>
+            <% if (usuario.rol === 'Administrador') { %>
+                <div class="nav-label">Sistema</div>
+                <%- item('/admin', 'sliders', 'Administrador') %>
+            <% } %>
+            <%- item('/contacto', 'chat-dots', 'Contacto y soporte') %>
+        </nav>
+        <div class="sidebar-foot">
+            <a class="nav-eco" href="/logout"><i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span></a>
+        </div>
+    </aside>
+
+    <div class="app-main">
+        <!-- Barra superior -->
+        <header class="topbar">
+            <button class="icon-btn d-lg-none" id="menuBtn" type="button" aria-label="Abrir menú"><i class="bi bi-list fs-5"></i></button>
+            <img class="eco-logo d-lg-none" src="/img/logo.svg" width="30" height="30" alt="EcoGrow">
+
+            <div class="ms-auto d-flex align-items-center gap-2 gap-sm-3">
+                <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar tema">
+                    <i class="bi bi-sun-fill theme-toggle-icon"></i>
+                    <span class="theme-name">Doki</span>
+                </button>
+
+                <span class="pill d-none d-sm-inline-flex">
+                    <span class="dot <%= hayOnline ? 'dot-ok' : 'dot-warn' %> me-0"></span>
+                    <i class="bi bi-wifi"></i>
+                    <%= hayOnline ? dispositivosOnline + ' ESP32 en línea' : 'Sin dispositivos en línea' %>
+                </span>
+
+                <a href="/app/alertas" class="icon-btn" aria-label="Alertas">
+                    <i class="bi bi-bell"></i>
+                    <% if (typeof alertasNuevas !== 'undefined' && alertasNuevas > 0) { %>
+                        <span class="badge-count"><%= alertasNuevas %></span>
+                    <% } %>
+                </a>
+
+                <div class="dropdown">
+                    <button class="user-btn" data-bs-toggle="dropdown" aria-expanded="false">
+                        <% if (typeof usuario.imagen_perfil !== 'undefined' && usuario.imagen_perfil) { %>
+                            <img class="avatar avatar-image" src="<%= usuario.imagen_perfil %>" alt="Perfil">
+                        <% } else { %><span class="avatar"><%= iniciales %></span><% } %>
+                        <span class="d-none d-sm-inline small text-truncate" style="max-width:7rem"><%= usuario.nombre %></span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><span class="dropdown-item-text small"><%= usuario.correo %> · <%= usuario.rol %></span></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/app/perfil">Mi perfil</a></li>
+                        <li><a class="dropdown-item" href="/app/configuracion">Configuración</a></li>
+                        <li><a class="dropdown-item" href="/contacto">Contacto</a></li>
+                        <li><a class="dropdown-item text-danger" href="/logout"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <main class="app-content"><div class="inner">

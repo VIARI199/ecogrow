@@ -1,0 +1,28 @@
+<%- include('../partials/header') %>
+
+<div class="col-lg-6 mx-auto">
+    <h1 class="mb-4"><%= item.ID_zona ? 'Editar' : 'Nueva' %> zona</h1>
+    <form action="<%= accion %>" method="POST" class="glass p-4">
+        <div class="mb-3">
+            <label class="form-label">Invernadero</label>
+            <select name="ID_invernadero" class="form-select" required>
+                <option value="">Selecciona...</option>
+                <% invernaderos.forEach(i => { %>
+                    <option value="<%= i.ID_invernadero %>" <%= item.ID_invernadero == i.ID_invernadero ? 'selected' : '' %>><%= i.nombre %></option>
+                <% }) %>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Nombre de la zona</label>
+            <input type="text" name="nombre_zona" maxlength="50" class="form-control" value="<%= item.nombre_zona || '' %>" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <input type="text" name="descripcion" maxlength="150" class="form-control" value="<%= item.descripcion || '' %>">
+        </div>
+        <button class="btn btn-eco">Guardar</button>
+        <a href="/zonas" class="btn btn-outline-light">Cancelar</a>
+    </form>
+</div>
+
+<%- include('../partials/footer') %>

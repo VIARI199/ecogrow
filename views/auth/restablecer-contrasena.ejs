@@ -1,0 +1,45 @@
+<%- include('../partials/header') %>
+
+<div class="public-center">
+    <div class="w-100">
+        <div class="text-center mb-4">
+            <img class="eco-logo float" src="/img/logo.svg" width="62" height="62" alt="EcoGrow">
+            <h1 class="mt-3 mb-1" style="font-size:2rem">Verifica tu correo</h1>
+            <p class="text-muted-eco small mb-0">Ingresa el código recibido por correo y crea una nueva contraseña 🌱</p>
+        </div>
+
+        <div class="auth-box glass p-4 p-md-5">
+            <% if (mensaje) { %>
+            <div class="alert alert-info" role="status"><%= mensaje %></div>
+            <% } %>
+            <form action="/restablecer-contrasena" method="POST">
+                <input type="hidden" name="correo" value="<%= correo %>">
+                <div class="mb-3">
+                    <label class="form-label" for="codigo">Código de 6 dígitos</label>
+                    <div class="input-icon">
+                        <i class="bi bi-envelope-check"></i>
+                        <input type="text" id="codigo" name="codigo" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" class="form-control" placeholder="123456" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="contrasena">Nueva contraseña</label>
+                    <div class="input-icon">
+                        <i class="bi bi-lock"></i>
+                        <input type="password" id="contrasena" name="contrasena" minlength="6" class="form-control" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label" for="confirmar">Confirmar nueva contraseña</label>
+                    <div class="input-icon">
+                        <i class="bi bi-lock-fill"></i>
+                        <input type="password" id="confirmar" name="confirmar" minlength="6" class="form-control" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <button class="btn btn-eco w-100 py-2" style="color:var(--primary-foreground)">Verificar y cambiar contraseña</button>
+            </form>
+            <p class="text-center mt-3 mb-0 small text-muted-eco"><a href="/olvide-contrasena">Solicitar otro código</a></p>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,45 @@
+<%- include('../partials/header') %>
+<% const fecha = item.fecha_siembra ? new Date(item.fecha_siembra).toISOString().slice(0, 10) : ''; %>
+
+<div class="col-lg-6 mx-auto">
+    <h1 class="mb-4"><%= item.ID_plantacion ? 'Editar' : 'Nueva' %> plantación</h1>
+    <form action="<%= accion %>" method="POST" class="glass p-4">
+        <div class="mb-3">
+            <label class="form-label">Especie</label>
+            <select name="ID_especie" class="form-select" required>
+                <option value="">Selecciona...</option>
+                <% especies.forEach(e => { %>
+                    <option value="<%= e.ID_especie %>" <%= item.ID_especie == e.ID_especie ? 'selected' : '' %>><%= e.nombre_comun %></option>
+                <% }) %>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Zona</label>
+            <select name="ID_zona" class="form-select" required>
+                <option value="">Selecciona...</option>
+                <% zonas.forEach(z => { %>
+                    <option value="<%= z.ID_zona %>" <%= item.ID_zona == z.ID_zona ? 'selected' : '' %>><%= z.nombre %></option>
+                <% }) %>
+            </select>
+            <div class="form-text">Cada zona puede tener solo una plantación activa.</div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Fecha de siembra</label>
+                <input type="date" name="fecha_siembra" class="form-control" value="<%= fecha %>" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <% estados.forEach(e => { %>
+                        <option <%= (item.estado || 'Crecimiento') === e ? 'selected' : '' %>><%= e %></option>
+                    <% }) %>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-eco">Guardar</button>
+        <a href="/plantaciones" class="btn btn-outline-light">Cancelar</a>
+    </form>
+</div>
+
+<%- include('../partials/footer') %>

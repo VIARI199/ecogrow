@@ -1,0 +1,112 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1><i class="bi bi-shield-lock text-eco"></i> Panel de administración</h1>
+    <div class="d-flex gap-2">
+        <a href="/admin/asignaciones" class="btn btn-outline-eco"><i class="bi bi-diagram-3"></i> Accesos</a>
+        <a href="/admin/catalogo" class="btn btn-outline-eco"><i class="bi bi-boxes"></i> Catálogo</a>
+        <a href="/admin/automatizacion" class="btn btn-outline-eco"><i class="bi bi-sliders"></i> Automatización</a>
+        <a href="/admin/reportes" class="btn btn-outline-eco"><i class="bi bi-file-earmark-spreadsheet"></i> Reportes</a>
+        <a href="/admin/auditoria" class="btn btn-outline-eco"><i class="bi bi-journal-text"></i> Auditoría</a>
+        <a href="/admin/usuarios" class="btn btn-eco"><i class="bi bi-people"></i> Gestionar usuarios</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="glass p-3 h-100">
+            <div class="small text-muted-eco"><i class="bi bi-people"></i> Usuarios registrados</div>
+            <div class="fs-3 fw-semibold font-display"><%= stats.usuarios %></div>
+            <div class="small text-muted-eco"><%= stats.activos %> con cuenta activa</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass p-3 h-100">
+            <div class="small text-muted-eco"><i class="bi bi-cpu"></i> Nodos y sensores</div>
+            <div class="fs-3 fw-semibold font-display"><%= stats.online %>/<%= stats.dispositivos %> <small class="fs-6 text-muted-eco fw-normal">online</small></div>
+            <div class="small text-muted-eco"><%= stats.sensores %> sensores activos</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass p-3 h-100">
+            <div class="small text-muted-eco"><i class="bi bi-exclamation-triangle"></i> Alertas críticas</div>
+            <div class="fs-3 fw-semibold font-display <%= stats.criticas > 0 ? 'text-danger' : '' %>"><%= stats.criticas %></div>
+            <div class="small text-muted-eco"><%= stats.criticas > 0 ? 'Requieren atención' : 'Todo en orden' %></div>
+        </div>
+    </div>
+</div>
+
+<%
+  // Convierte una fecha en "hace 3 min", "hace 2 h"...
+  const hace = (f) => {
+      if (!f) return 'Nunca se ha conectado';
+      const min = Math.round((Date.now() - new Date(f).getTime()) / 60000);
+      if (min < 1) return 'hace unos segundos';
+      if (min < 60) return `hace ${min} min`;
+      if (min < 1440) return `hace ${Math.round(min / 60)} h`;
+      return `hace ${Math.round(min / 1440)} días`;
+  };
+%>
+
+<h4 class="mb-3"><i class="bi bi-cpu text-eco"></i> Dispositivos IoT (ESP32)</h4>
+<% if (dispositivos.length === 0) { %>
+    <div class="glass empty-state mb-4">📡 Todavía no hay dispositivos registrados.</div>
+<% } %>
+<div class="row g-3 mb-4">
+    <% dispositivos.forEach(d => { %>
+        <div class="col-md-6 col-xl-4">
+            <div class="glass hover p-3 h-100">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                        <div class="fw-semibold"><%= d.nombre %></div>
+                        <div class="small text-muted-eco"><%= d.invernadero %> · <%= d.nombre_zona %></div>
+                    </div>
+                    <% if (d.estado === 'Mantenimiento') { %>
+                        <span class="pill"><span class="dot dot-warn me-0"></span> Mantenimiento</span>
+                    <% } else if (d.enlace) { %>
+                        <span class="pill"><span class="dot dot-ok me-0"></span> Transmitiendo</span>
+                    <% } else { %>
+                        <span class="pill"><span class="dot dot-crit me-0"></span> Sin señal</span>
+                    <% } %>
+                </div>
+                <div class="small mt-3">
+                    <div class="d-flex justify-content-between gap-3 py-1 border-bottom"><span class="text-muted-eco">MAC</span><code><%= d.mac_address %></code></div>
+                    <div class="d-flex justify-content-between gap-3 py-1 border-bottom"><span class="text-muted-eco">Firmware</span><span><%= d.firmware_version || '—' %></span></div>
+                    <div class="d-flex justify-content-between gap-3 py-1 border-bottom"><span class="text-muted-eco">Sensores</span><span class="text-end"><%= d.sensores || 'Sin sensores' %></span></div>
+                    <div class="d-flex justify-content-between gap-3 py-1 border-bottom"><span class="text-muted-eco">Actuadores</span><span class="text-end"><%= d.actuadores || 'Sin actuadores' %></span></div>
+                    <div class="d-flex justify-content-between gap-3 py-1"><span class="text-muted-eco">Última conexión</span><span><%= hace(d.ultima_comunicacion) %></span></div>
+                </div>
+            </div>
+        </div>
+    <% }) %>
+</div>
+
+<div class="glass p-3 mb-4">
+    <h4><i class="bi bi-bell text-eco"></i> Alertas recientes de conexión</h4>
+    <% if (alertas.length === 0) { %>
+        <p class="text-muted-eco mb-0">No hay desconexiones pendientes.</p>
+    <% } else { alertas.forEach(a => { %>
+        <div class="border-bottom py-2 small">
+            <span class="badge text-bg-<%= a.nivel_urgencia === 'Alta' || a.nivel_urgencia === 'Critica' ? 'danger' : 'warning' %>"><%= a.nivel_urgencia %></span>
+            <strong class="ms-1"><%= a.tipo_alerta %></strong> <%= a.mensaje %>
+            <div class="text-muted-eco"><%= new Date(a.fecha_hora).toLocaleString('es-CL') %></div>
+        </div>
+    <% }) } %>
+</div>
+
+<div class="glass p-3 mb-4">
+    <h4>Últimas acciones</h4>
+    <% if (acciones.length === 0) { %><p class="text-muted-eco mb-0">Aún no se ejecutan acciones.</p><% } %>
+    <% acciones.forEach(a => { %>
+        <div class="border-bottom border-success-subtle py-2 small">
+            <b><%= a.comando %></b> <%= a.actuador %> · <%= a.origen %> · <%= (a.descripcion || '').startsWith('[SIMULACIÓN]') ? 'Simulada' : a.estado_comando %>
+            <div class="text-muted-eco"><%= a.descripcion %> — <%= new Date(a.fecha_creacion).toLocaleString('es-CL') %></div>
+        </div>
+    <% }) %>
+</div>
+
+<script>
+    setTimeout(() => location.reload(), 30000);
+</script>
+
+<%- include('../partials/footer') %>

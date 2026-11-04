@@ -1,0 +1,42 @@
+<%- include('../partials/header') %>
+
+<a href="/app/plantas" class="small">&larr; Volver a mis plantas</a>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 my-3">
+    <div>
+        <h1 class="mb-1"><%= plantacion.nombre_comun %> <span class="dot dot-ok align-middle"></span></h1>
+        <p class="text-muted-eco mb-0 fst-italic"><%= plantacion.nombre_cientifico %></p>
+        <p class="small text-muted-eco mt-2"><i class="bi bi-geo-alt"></i> <%= plantacion.invernadero %> · <%= plantacion.nombre_zona %></p>
+    </div>
+    <a href="/app/plantas/<%= plantacion.ID_plantacion %>/edit" class="btn btn-outline-eco">Editar cultivo</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="glass p-4 h-100">
+            <h4>Ficha técnica</h4>
+            <p class="text-muted-eco">Sembrada el <%= new Date(plantacion.fecha_siembra).toLocaleDateString('es-CL') %> · <%= plantacion.estado %></p>
+            <div class="row g-2 small">
+                <div class="col-6"><div class="p-3 rounded border">Temperatura ideal<strong class="d-block mt-1"><%= plantacion.temp_min %>–<%= plantacion.temp_max %> °C</strong></div></div>
+                <div class="col-6"><div class="p-3 rounded border">Humedad de suelo<strong class="d-block mt-1"><%= plantacion.humedad_suelo_min %>–<%= plantacion.humedad_suelo_max %>%</strong></div></div>
+                <div class="col-12"><div class="p-3 rounded border">Luz recomendada<strong class="d-block mt-1"><%= plantacion.luz_min_lux %>–<%= plantacion.luz_max_lux %> lux</strong></div></div>
+            </div>
+            <h5 class="mt-4">Cuidados específicos</h5>
+            <p class="small text-muted-eco mb-0">Mantén la humedad dentro del rango recomendado, revisa las hojas con frecuencia y ventila el espacio durante las horas más cálidas.</p>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="glass p-4 h-100">
+            <h4>Mediciones actuales</h4>
+            <% if (mediciones.length === 0) { %><p class="text-muted-eco">No hay sensores asociados a esta zona.</p><% } %>
+            <div class="row g-3">
+            <% mediciones.forEach(m => { %>
+                <div class="col-sm-6"><div class="p-3 rounded border"><span class="text-muted-eco small text-capitalize"><%= m.nombre_variable.replace('_', ' ') %></span><strong class="d-block fs-3"><%= Number(m.valor) %> <small class="fs-6 text-muted-eco"><%= m.unidad_medida %></small></strong></div></div>
+            <% }) %>
+            </div>
+            <h5 class="mt-4">Plagas comunes</h5>
+            <p class="small text-muted-eco mb-0">Inspecciona pulgones, mosca blanca y hongos. Aísla las hojas afectadas y consulta al equipo de soporte antes de aplicar cualquier producto.</p>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

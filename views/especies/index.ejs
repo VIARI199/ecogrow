@@ -1,0 +1,32 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Especies</h1>
+    <a href="/especies/create" class="btn btn-eco"><i class="bi bi-plus-lg"></i> Nueva especie</a>
+</div>
+
+<% if (especies.length === 0) { %>
+    <div class="glass empty-state">No hay especies registradas.</div>
+<% } %>
+
+<div class="row g-3">
+<% especies.forEach(e => { %>
+    <div class="col-md-6 col-lg-4">
+        <div class="glass p-4 h-100">
+            <h4 class="mb-0"><%= e.nombre_comun %></h4>
+            <p class="fst-italic text-muted-eco"><%= e.nombre_cientifico %></p>
+            <ul class="list-unstyled small">
+                <li><i class="bi bi-thermometer-half text-eco"></i> <%= e.temp_min %> – <%= e.temp_max %> °C</li>
+                <li><i class="bi bi-droplet-half text-eco"></i> Suelo <%= e.humedad_suelo_min %> – <%= e.humedad_suelo_max %> %</li>
+                <li><i class="bi bi-brightness-high text-eco"></i> <%= e.luz_min_lux %> – <%= e.luz_max_lux %> lux</li>
+            </ul>
+            <a href="/especies/<%= e.ID_especie %>/edit" class="btn btn-sm btn-outline-light">Editar</a>
+            <form action="/especies/<%= e.ID_especie %>/delete" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar especie?')">
+                <button class="btn btn-sm btn-outline-danger">Eliminar</button>
+            </form>
+        </div>
+    </div>
+<% }) %>
+</div>
+
+<%- include('../partials/footer') %>

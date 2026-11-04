@@ -1,0 +1,7 @@
+<%- include('partials/header') %>
+<div class="mb-4"><h1>EcoGrow AI 🌱</h1><p class="text-muted-eco">Orientación de cultivo basada en tus observaciones. No ejecuta acciones automáticamente.</p></div>
+<div class="row g-3">
+    <div class="col-lg-8"><form action="/app/ia" method="POST" class="glass p-4"><label class="form-label" for="pregunta">¿Qué quieres consultar?</label><textarea class="form-control" id="pregunta" name="pregunta" rows="4" placeholder="Ej.: ¿Por qué las hojas tienen puntas amarillas?"><%= pregunta %></textarea><button class="btn btn-eco mt-3"><i class="bi bi-stars"></i> Analizar consulta</button></form><% if (respuesta) { %><div class="glass p-4 mt-3"><span class="pill"><span class="dot dot-ok me-0"></span> Orientación EcoGrow · confianza informativa</span><p class="mt-3 mb-0"><%= respuesta %></p></div><% } %></div>
+    <div class="col-lg-4"><div class="glass p-4 h-100"><h5>Recomendaciones preventivas</h5><ul class="small text-muted-eco mb-0"><li class="mb-2">Revisa sensores antes de regar.</li><li class="mb-2">Ventila cuando suba la temperatura.</li><li>Consulta a un especialista ante plagas severas.</li></ul></div></div>
+</div>
+<%- include('partials/footer') %>

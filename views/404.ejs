@@ -1,0 +1,9 @@
+<%- include('partials/header') %>
+<div class="<%= usuario ? '' : 'public-center' %>">
+    <div class="glass empty-state mx-auto" style="max-width:32rem">
+        <h1 class="display-3">🌿 404</h1>
+        <p>La página que buscas no existe.</p>
+        <a href="<%= usuario ? '/dashboard' : '/' %>" class="btn btn-eco" style="color:var(--primary-foreground)">Volver al inicio</a>
+    </div>
+</div>
+<%- include('partials/footer') %>

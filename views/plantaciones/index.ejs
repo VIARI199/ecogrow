@@ -1,0 +1,71 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Mis plantaciones</h1>
+    <button class="btn btn-eco" data-bs-toggle="modal" data-bs-target="#addPlantModal"><i class="bi bi-plus-lg"></i> Añadir planta</button>
+</div>
+
+<% if (plantaciones.length === 0) { %>
+    <div class="glass empty-state">🌱 Todavía no tienes plantas conectadas.</div>
+<% } %>
+
+<div class="row g-3">
+<% plantaciones.forEach(p => { %>
+    <div class="col-md-6 col-lg-4">
+        <div class="glass p-4 h-100">
+            <div class="d-flex justify-content-between">
+                <h4 class="mb-0"><%= p.nombre_comun %></h4>
+                <span><span class="dot <%= p.estado === 'Finalizado' ? 'dot-crit' : p.estado === 'Cosecha' ? 'dot-warn' : 'dot-ok' %>"></span><%= p.estado %></span>
+            </div>
+            <p class="fst-italic text-muted-eco small"><%= p.nombre_cientifico %></p>
+            <p class="mb-1"><i class="bi bi-geo-alt text-eco"></i> <%= p.invernadero %> · <%= p.nombre_zona %></p>
+            <p class="small text-muted-eco">Sembrado el <%= new Date(p.fecha_siembra).toLocaleDateString('es-CL') %></p>
+            <a href="/app/plantas/<%= p.ID_plantacion %>" class="btn btn-sm btn-outline-eco">Ver ficha</a>
+            <a href="/app/plantas/<%= p.ID_plantacion %>/edit" class="btn btn-sm btn-outline-light">Editar</a>
+            <form action="/app/plantas/<%= p.ID_plantacion %>/delete" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar plantación?')">
+                <button class="btn btn-sm btn-outline-danger">Eliminar</button>
+            </form>
+        </div>
+    </div>
+<% }) %>
+</div>
+
+<div class="modal fade" id="addPlantModal" tabindex="-1" aria-labelledby="addPlantModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-eco">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="addPlantModalLabel">Añadir planta 🌱</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form action="/app/plantas/create" method="POST">
+                <div class="modal-body">
+                    <p class="small text-muted-eco">Vincula el cultivo a un espacio. Después podrás asociar sus sensores desde Componentes.</p>
+                    <label class="form-label">Especie</label>
+                    <select name="ID_especie" class="form-select mb-3" required>
+                        <option value="">Selecciona una especie...</option>
+                        <% especies.forEach(e => { %><option value="<%= e.ID_especie %>"><%= e.nombre_comun %></option><% }) %>
+                    </select>
+                    <label class="form-label">Espacio o zona</label>
+                    <select name="ID_zona" class="form-select mb-3" required>
+                        <option value="">Selecciona una zona...</option>
+                        <% zonas.forEach(z => { %><option value="<%= z.ID_zona %>"><%= z.nombre %></option><% }) %>
+                    </select>
+                    <div class="row g-2">
+                        <div class="col-6"><label class="form-label">Fecha de siembra</label><input type="date" name="fecha_siembra" class="form-control" required></div>
+                        <div class="col-6"><label class="form-label">Estado</label><select name="estado" class="form-select"><% estados.forEach(e => { %><option value="<%= e %>" <%= e === 'Crecimiento' ? 'selected' : '' %>><%= e %></option><% }) %></select></div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0"><button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-eco">Guardar planta</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const addPlantModal = document.getElementById('addPlantModal');
+    if (addPlantModal && addPlantModal.parentElement !== document.body) {
+        document.body.appendChild(addPlantModal);
+    }
+</script>
+
+<%- include('../partials/footer') %>

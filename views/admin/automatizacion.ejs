@@ -1,0 +1,136 @@
+<%- include('../partials/header') %>
+<%
+  const U = Object.fromEntries(umbrales.map((u) => [u.variable, u]));
+  const val = (variable, campo) => (U[variable] ? Number(U[variable][campo]) : '');
+%>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+        <h1 class="mb-1"><i class="bi bi-sliders text-eco"></i> Automatización</h1>
+        <p class="text-muted-eco mb-0">Umbrales del cultivo y control de actuadores.</p>
+    </div>
+    <a href="/admin" class="btn btn-outline-light">Volver</a>
+</div>
+
+<h4 class="mb-3">Umbrales ambientales</h4>
+<form action="/admin/automatizacion/umbrales" method="POST" class="glass p-4 mb-4"
+      data-confirmar="¿Guardar los nuevos umbrales? Cambian cuándo el sistema genera alertas.">
+    <div class="row g-4">
+        <div class="col-md-6">
+            <h6><i class="bi bi-thermometer-half text-eco"></i> Temperatura (°C)</h6>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="form-label" for="temp_min">Mínima</label>
+                    <input type="number" step="0.1" id="temp_min" name="temp_min" class="form-control" value="<%= val('Temperatura', 'minimo') %>" required>
+                </div>
+                <div class="col-6">
+                    <label class="form-label" for="temp_max">Máxima</label>
+                    <input type="number" step="0.1" id="temp_max" name="temp_max" class="form-control" value="<%= val('Temperatura', 'maximo') %>" required>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h6><i class="bi bi-droplet-half text-eco"></i> Humedad de suelo (%)</h6>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="form-label" for="suelo_min">Mínima</label>
+                    <input type="number" step="1" min="0" max="100" id="suelo_min" name="suelo_min" class="form-control" value="<%= val('Humedad del suelo', 'minimo') %>" required>
+                </div>
+                <div class="col-6">
+                    <label class="form-label" for="suelo_max">Máxima</label>
+                    <input type="number" step="1" min="0" max="100" id="suelo_max" name="suelo_max" class="form-control" value="<%= val('Humedad del suelo', 'maximo') %>" required>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="btn btn-eco mt-4"><i class="bi bi-check2-circle"></i> Guardar umbrales</button>
+</form>
+
+<%
+  const icono = { Bomba: '💧', Ventilador: '🌀', Ventilacion: '🌀', Iluminacion: '☀️' };
+  const simulados = actuadores.filter((a) => !a.enlace).length;
+%>
+<h4 class="mb-3">Control manual de actuadores</h4>
+<% if (simulados > 0) { %>
+    <div class="alert alert-warning d-flex gap-2 align-items-start">
+        <i class="bi bi-exclamation-triangle mt-1"></i>
+        <div><b>Modo simulación</b> en los actuadores cuya placa no está transmitiendo: la orden queda registrada
+        pero <b>no se envía</b> a ningún relé. Cuando el ESP32 esté en línea, las órdenes serán reales.</div>
+    </div>
+<% } %>
+<% if (actuadores.length === 0) { %>
+    <div class="glass empty-state mb-4">🔌 Todavía no hay actuadores registrados.</div>
+<% } %>
+<div class="row g-3 mb-4">
+    <% actuadores.forEach((a) => { %>
+        <div class="col-md-6 col-xl-4">
+            <div class="glass p-3 h-100">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-3"><%= icono[a.tipo] || '⚙️' %></span>
+                        <div>
+                            <div class="fw-semibold"><%= a.nombre %></div>
+                            <div class="small text-muted-eco"><%= a.invernadero %> · <%= a.nombre_zona %></div>
+                        </div>
+                    </div>
+                    <span class="badge <%= a.estado === 'Encendido' ? 'text-bg-success' : 'text-bg-secondary' %>"><%= a.estado %></span>
+                </div>
+                <div class="small text-muted-eco mt-2">
+                    Placa: <%= a.dispositivo %> ·
+                    <% if (a.enlace) { %><span class="text-eco">En vivo</span><% } else { %><span class="text-warning">Simulación</span><% } %>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <% ['Encender', 'Apagar'].forEach((cmd) => { %>
+                        <form action="/admin/automatizacion/actuadores/<%= a.ID_actuador %>" method="POST"
+                              data-confirmar="¿<%= cmd %> «<%= a.nombre %>»?<%= a.enlace ? '' : ' Es una simulación: no se envía a ningún relé.' %>">
+                            <input type="hidden" name="comando" value="<%= cmd %>">
+                            <button class="btn btn-sm <%= cmd === 'Encender' ? 'btn-eco' : 'btn-outline-light' %>">
+                                <i class="bi bi-power"></i> <%= cmd %>
+                            </button>
+                        </form>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+    <% }) %>
+</div>
+
+<!-- Ventana de confirmación (una sola para todas las acciones) -->
+<div class="modal fade" id="modalConfirmar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass" style="background-color: var(--popover)">
+            <div class="modal-body p-4">
+                <h5 class="mb-2">Confirmar acción</h5>
+                <p id="modalTexto" class="text-muted-eco mb-4"></p>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-eco" id="modalAceptar">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const modalEl = document.getElementById('modalConfirmar');
+    document.body.appendChild(modalEl);   // lo saca del contenido para que no quede tapado por el fondo oscuro
+    const modal = new bootstrap.Modal(modalEl);
+    const textoModal = document.getElementById('modalTexto');
+    let formPendiente = null;
+
+    document.querySelectorAll('form[data-confirmar]').forEach((form) => {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            formPendiente = form;
+            textoModal.textContent = form.dataset.confirmar;
+            modal.show();
+        });
+    });
+    document.getElementById('modalAceptar').addEventListener('click', () => {
+        if (formPendiente) formPendiente.submit();
+    });
+});
+</script>
+
+<%- include('../partials/footer') %>

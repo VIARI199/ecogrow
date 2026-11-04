@@ -1,0 +1,115 @@
+<%- include('../partials/header') %>
+<%
+  const colorRol = { Propietario: 'text-bg-success', Operador: 'text-bg-info', Supervisor: 'text-bg-warning', Lector: 'text-bg-secondary' };
+%>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+        <h1 class="mb-1"><i class="bi bi-diagram-3 text-eco"></i> Accesos a invernaderos</h1>
+        <p class="text-muted-eco mb-0">Quién puede ver cada invernadero y con qué rol.</p>
+    </div>
+    <a href="/admin" class="btn btn-outline-light">Volver</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <form action="/admin/asignaciones" method="POST" class="glass p-4">
+            <h5 class="mb-3">Dar acceso o cambiar rol</h5>
+            <div class="mb-3">
+                <label class="form-label" for="ID_usuario">Usuario</label>
+                <select id="ID_usuario" name="ID_usuario" class="form-select" required>
+                    <option value="" disabled selected>Elige un usuario…</option>
+                    <% usuarios.forEach((u) => { %>
+                        <option value="<%= u.ID_usuario %>"><%= u.nombre %> — <%= u.correo %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="ID_invernadero">Invernadero</label>
+                <select id="ID_invernadero" name="ID_invernadero" class="form-select" required>
+                    <option value="" disabled selected>Elige un invernadero…</option>
+                    <% invernaderos.forEach((i) => { %>
+                        <option value="<%= i.ID_invernadero %>"><%= i.nombre %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="rol">Rol en el invernadero</label>
+                <select id="rol" name="rol" class="form-select" required>
+                    <% roles.forEach((r) => { %><option value="<%= r %>"><%= r %></option><% }) %>
+                </select>
+                <div class="form-text">Si la persona ya tenía acceso, se le cambia el rol.</div>
+            </div>
+            <button class="btn btn-eco w-100"><i class="bi bi-check2-circle"></i> Guardar</button>
+        </form>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="glass p-3">
+            <% if (filas.length === 0) { %>
+                <div class="empty-state">Todavía no hay accesos asignados.</div>
+            <% } else { %>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead><tr><th>Invernadero</th><th>Usuario</th><th>Rol</th><th class="text-end">Acción</th></tr></thead>
+                    <tbody>
+                    <% filas.forEach((f) => { %>
+                        <tr>
+                            <td><%= f.invernadero %></td>
+                            <td><%= f.nombre %><div class="small text-muted-eco"><%= f.correo %><% if (f.estado !== 'Activo') { %> · <%= f.estado === 'Inactivo' ? 'suspendido' : 'de baja' %><% } %></div></td>
+                            <td><span class="badge <%= colorRol[f.rol_en_invernadero] || 'text-bg-secondary' %>"><%= f.rol_en_invernadero %></span></td>
+                            <td class="text-end">
+                                <form action="/admin/asignaciones/<%= f.ID_usuario %>/<%= f.ID_invernadero %>/delete" method="POST"
+                                      data-confirmar="¿Quitar el acceso de <%= f.nombre %> al invernadero «<%= f.invernadero %>»?">
+                                    <button class="btn btn-sm btn-outline-danger" title="Quitar acceso"><i class="bi bi-person-dash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<!-- Ventana de confirmación (una sola para todas las acciones) -->
+<div class="modal fade" id="modalConfirmar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass" style="background-color: var(--popover)">
+            <div class="modal-body p-4">
+                <h5 class="mb-2">Confirmar acción</h5>
+                <p id="modalTexto" class="text-muted-eco mb-4"></p>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-eco" id="modalAceptar">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const modalEl = document.getElementById('modalConfirmar');
+    document.body.appendChild(modalEl);   // lo saca del contenido para que no quede tapado por el fondo oscuro
+    const modal = new bootstrap.Modal(modalEl);
+    const textoModal = document.getElementById('modalTexto');
+    let formPendiente = null;
+
+    document.querySelectorAll('form[data-confirmar]').forEach((form) => {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            formPendiente = form;
+            textoModal.textContent = form.dataset.confirmar;
+            modal.show();
+        });
+    });
+    document.getElementById('modalAceptar').addEventListener('click', () => {
+        if (formPendiente) formPendiente.submit();
+    });
+});
+</script>
+
+<%- include('../partials/footer') %>

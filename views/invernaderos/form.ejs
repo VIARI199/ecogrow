@@ -1,0 +1,38 @@
+<%- include('../partials/header') %>
+<% const fecha = item.fecha_creacion ? new Date(item.fecha_creacion).toISOString().slice(0, 10) : ''; %>
+
+<div class="col-lg-7 mx-auto">
+    <h1 class="mb-4"><%= item.ID_invernadero ? 'Editar' : 'Nuevo' %> invernadero</h1>
+    <form action="<%= accion %>" method="POST" class="glass p-4">
+        <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" name="nombre" maxlength="50" class="form-control" value="<%= item.nombre || '' %>" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Ubicación</label>
+            <input type="text" name="ubicacion" maxlength="100" class="form-control" value="<%= item.ubicacion || '' %>" required>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Fecha de creación</label>
+                <input type="date" name="fecha_creacion" class="form-control" value="<%= fecha %>" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <% estados.forEach(e => { %>
+                        <option <%= item.estado === e ? 'selected' : '' %>><%= e %></option>
+                    <% }) %>
+                </select>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <textarea name="descripcion" rows="3" class="form-control"><%= item.descripcion || '' %></textarea>
+        </div>
+        <button class="btn btn-eco">Guardar</button>
+        <a href="/invernaderos" class="btn btn-outline-light">Cancelar</a>
+    </form>
+</div>
+
+<%- include('../partials/footer') %>

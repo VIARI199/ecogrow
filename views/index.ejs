@@ -1,0 +1,42 @@
+<%- include('partials/header') %>
+
+<section class="hero text-center">
+    <img class="eco-logo float" src="/img/logo.svg" width="72" height="72" alt="EcoGrow">
+    <h1 class="mt-4">Eco<span class="gradient-text">Grow</span></h1>
+    <p class="lead text-muted-eco col-lg-6 mx-auto mt-2">Tecnología que entiende tus plantas.</p>
+    <p class="text-muted-eco col-lg-7 mx-auto small">
+        Sensores ESP32 en tu invernadero, con temperatura, humedad, luz y suelo en tiempo real,
+        alertas y reglas automáticas de riego y ventilación.
+    </p>
+    <div class="d-flex justify-content-center gap-2 mt-4">
+        <a href="/login" class="btn btn-eco btn-lg px-4" style="color:var(--primary-foreground)">Iniciar sesión</a>
+        <a href="/registro" class="btn btn-outline-eco btn-lg px-4">Crear cuenta</a>
+    </div>
+</section>
+
+<section class="row g-3">
+    <% [
+        ['thermometer-half', 'Temperatura', 'Lecturas del DHT22 cada pocos segundos.'],
+        ['droplet-half', 'Humedad del suelo', 'Riego automático cuando el suelo está seco.'],
+        ['brightness-high', 'Iluminación', 'Luz medida con el sensor BH1750.'],
+        ['bell', 'Alertas', 'Avisos por nivel de urgencia: baja, media, alta y crítica.']
+    ].forEach(([icono, titulo, texto], i) => { %>
+        <div class="col-md-6 col-lg-3">
+            <div class="glass hover p-4 h-100" data-delay="<%= 120 + i * 90 %>">
+                <span class="icon-chip"><i class="bi bi-<%= icono %>"></i></span>
+                <h5 class="mt-3 mb-1"><%= titulo %></h5>
+                <p class="text-muted-eco small mb-0"><%= texto %></p>
+            </div>
+        </div>
+    <% }) %>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[data-delay]').forEach((el) => {
+            el.style.animationDelay = `${el.dataset.delay}ms`;
+        });
+    });
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,74 @@
+<%- include('../partials/header') %>
+<%
+  const ESTADOS = ['Activo', 'Mantenimiento', 'Inactivo'];
+  const accesos = [
+      ['/especies', 'tree', 'Plantas', 'Fichas de especies y sus rangos ideales.'],
+      ['/invernaderos', 'buildings', 'Invernaderos', 'Crear y renombrar los espacios.'],
+      ['/zonas', 'grid-3x3-gap', 'Zonas', 'Áreas dentro de cada invernadero.'],
+      ['/dispositivos', 'cpu', 'Dispositivos', 'Placas ESP32, sensores y actuadores.']
+  ];
+%>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+        <h1 class="mb-1"><i class="bi bi-boxes text-eco"></i> Catálogo</h1>
+        <p class="text-muted-eco mb-0">Cultivos, espacios y sensores del sistema.</p>
+    </div>
+    <a href="/admin" class="btn btn-outline-light">Volver</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <% accesos.forEach(([href, icono, titulo, texto]) => { %>
+        <div class="col-6 col-lg-3">
+            <a href="<%= href %>" class="glass hover p-3 h-100 d-block text-decoration-none">
+                <span class="icon-chip"><i class="bi bi-<%= icono %>"></i></span>
+                <div class="fw-semibold mt-2"><%= titulo %></div>
+                <div class="small text-muted-eco"><%= texto %></div>
+            </a>
+        </div>
+    <% }) %>
+</div>
+
+<h4 class="mb-1">Sensores</h4>
+<p class="text-muted-eco small mb-3">
+    Puedes cambiar el modelo, el pin, el número de serie y el estado. Los nombres de las variables
+    (Temperatura, Luz...) no se editan aquí a propósito: deben coincidir con los que envía el ESP32.
+</p>
+<% if (sensores.length === 0) { %>
+    <div class="glass empty-state mb-4">🔌 Todavía no hay sensores registrados.</div>
+<% } %>
+<div class="row g-3 mb-4">
+    <% sensores.forEach((s) => { %>
+        <div class="col-md-6 col-xl-4">
+            <form action="/admin/catalogo/sensores/<%= s.ID_sensor %>" method="POST" class="glass p-3 h-100">
+                <div class="small text-muted-eco mb-2"><i class="bi bi-cpu"></i> <%= s.dispositivo %> · <%= s.nombre_zona %></div>
+                <div class="mb-2">
+                    <label class="form-label small" for="modelo-<%= s.ID_sensor %>">Modelo</label>
+                    <input id="modelo-<%= s.ID_sensor %>" name="modelo" class="form-control form-control-sm" value="<%= s.modelo %>" maxlength="40" required>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small" for="pin-<%= s.ID_sensor %>">Pin</label>
+                        <input id="pin-<%= s.ID_sensor %>" name="puerto_pin" class="form-control form-control-sm" value="<%= s.puerto_pin %>" maxlength="20" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small" for="serie-<%= s.ID_sensor %>">N.º de serie</label>
+                        <input id="serie-<%= s.ID_sensor %>" name="numero_serie" class="form-control form-control-sm" value="<%= s.numero_serie || '' %>" maxlength="50">
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small" for="estado-<%= s.ID_sensor %>">Estado</label>
+                    <select id="estado-<%= s.ID_sensor %>" name="estado" class="form-select form-select-sm">
+                        <% ESTADOS.forEach((e) => { %>
+                            <option value="<%= e %>" <%= s.estado === e ? 'selected' : '' %>><%= e %></option>
+                        <% }) %>
+                    </select>
+                </div>
+                <div class="small text-muted-eco mb-3">Mide: <%= s.metricas || 'sin métricas' %></div>
+                <button class="btn btn-sm btn-eco"><i class="bi bi-check2"></i> Guardar</button>
+            </form>
+        </div>
+    <% }) %>
+</div>
+
+<%- include('../partials/footer') %>

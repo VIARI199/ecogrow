@@ -1,0 +1,76 @@
+<%- include('../partials/header') %>
+
+<a href="<%= baseUrl %>" class="small">&larr; Volver</a>
+<h1 class="mt-2 mb-0"><%= dispositivo.nombre %></h1>
+<p class="text-muted-eco"><code><%= dispositivo.mac_address %></code> · <%= dispositivo.tipo_controlador %> <%= dispositivo.firmware_version %> · <span class="dot <%= dispositivo.estado === 'Online' ? 'dot-ok' : dispositivo.estado === 'Mantenimiento' ? 'dot-warn' : 'dot-crit' %>"></span><%= dispositivo.estado === 'Offline' ? 'Apagado' : dispositivo.estado %></p>
+<div class="glass p-3 mb-3">
+    <h4>Componentes asignados</h4>
+    <div class="row g-2 small">
+        <div class="col-sm-4"><div class="border rounded p-2"><strong>DHT22</strong><br><span class="text-muted-eco">Temperatura y humedad ambiental</span></div></div>
+        <div class="col-sm-4"><div class="border rounded p-2"><strong>Higrómetro</strong><br><span class="text-muted-eco">Humedad de raíces</span></div></div>
+        <div class="col-sm-4"><div class="border rounded p-2"><strong>BH1750 / MQ-135</strong><br><span class="text-muted-eco">Luz y calidad del aire</span></div></div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="glass p-3 table-responsive">
+            <h4>Sensores</h4>
+            <% if (sensores.length === 0) { %>
+                <p class="text-muted-eco">Este ESP32 aún no tiene sensores.</p>
+            <% } else { %>
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Modelo</th><th>Pin</th><th>Serie</th><th>Mide</th><th>Estado</th><th></th></tr></thead>
+                <tbody>
+                <% sensores.forEach(s => { %>
+                    <tr>
+                        <td><%= s.modelo %></td><td><code><%= s.puerto_pin %></code></td>
+                        <td><%= s.numero_serie || '—' %></td><td class="small"><%= s.metricas || '—' %></td>
+                        <td><%= s.estado %></td>
+                        <td class="text-end">
+                            <form action="/dispositivos/<%= dispositivo.ID_dispositivo %>/sensores/<%= s.ID_sensor %>/delete" method="POST"
+                                  onsubmit="return confirm('¿Eliminar sensor?')">
+                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                <% }) %>
+                </tbody>
+            </table>
+            <% } %>
+        </div>
+
+        <div class="glass p-3 mt-3">
+            <h4>Actuadores</h4>
+            <% if (actuadores.length === 0) { %><p class="text-muted-eco mb-0">Sin actuadores.</p><% } %>
+            <% actuadores.forEach(a => { %>
+                <span class="badge text-bg-dark border me-2 p-2"><%= a.nombre %> (<%= a.tipo %>) · <%= a.estado %></span>
+            <% }) %>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <form action="/dispositivos/<%= dispositivo.ID_dispositivo %>/sensores" method="POST" class="glass p-3">
+            <h4>Agregar sensor</h4>
+            <div class="mb-2"><label class="form-label">Modelo</label>
+                <input name="modelo" class="form-control" placeholder="DHT22" required></div>
+            <div class="mb-2"><label class="form-label">Pin</label>
+                <input name="puerto_pin" class="form-control" placeholder="GPIO4" required></div>
+            <div class="mb-2"><label class="form-label">N° de serie</label>
+                <input name="numero_serie" class="form-control"></div>
+            <div class="mb-2"><label class="form-label">Variable que mide</label>
+                <select name="nombre_variable" class="form-select">
+                    <option value="temperatura">temperatura</option>
+                    <option value="humedad_ambiente">humedad_ambiente</option>
+                    <option value="humedad_suelo">humedad_suelo</option>
+                    <option value="luz">luz</option>
+                    <option value="calidad_aire">calidad_aire</option>
+                </select></div>
+            <div class="mb-3"><label class="form-label">Unidad</label>
+                <input name="unidad_medida" class="form-control" placeholder="°C, %, lux" required></div>
+            <button class="btn btn-eco w-100">Agregar</button>
+        </form>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

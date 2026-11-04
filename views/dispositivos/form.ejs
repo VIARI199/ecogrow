@@ -1,0 +1,47 @@
+<%- include('../partials/header') %>
+
+<div class="col-lg-7 mx-auto">
+    <h1 class="mb-4"><%= item.ID_dispositivo ? 'Editar' : 'Registrar' %> dispositivo</h1>
+    <form action="<%= accion %>" method="POST" class="glass p-4">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Nombre</label>
+                <input type="text" name="nombre" maxlength="50" class="form-control" value="<%= item.nombre || '' %>" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Dirección MAC</label>
+                <input type="text" name="mac_address" maxlength="17" placeholder="AA:BB:CC:DD:EE:FF"
+                       pattern="([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}" class="form-control" value="<%= item.mac_address || '' %>" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Controlador</label>
+                <input type="text" name="tipo_controlador" class="form-control" value="<%= item.tipo_controlador || 'ESP32' %>">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Firmware</label>
+                <input type="text" name="firmware_version" class="form-control" value="<%= item.firmware_version || 'v1.0.0' %>">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Zona</label>
+                <select name="ID_zona" class="form-select" required>
+                    <option value="">Selecciona...</option>
+                    <% zonas.forEach(z => { %>
+                        <option value="<%= z.ID_zona %>" <%= item.ID_zona == z.ID_zona ? 'selected' : '' %>><%= z.nombre %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <% estados.forEach(e => { %>
+                        <option <%= (item.estado || 'Offline') === e ? 'selected' : '' %>><%= e %></option>
+                    <% }) %>
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-eco">Guardar</button>
+        <a href="/dispositivos" class="btn btn-outline-light">Cancelar</a>
+    </form>
+</div>
+
+<%- include('../partials/footer') %>

@@ -26,11 +26,14 @@
     </div>
     <div class="col-lg-7">
         <div class="glass p-4 h-100">
-            <h4>Mediciones actuales</h4>
-            <% if (mediciones.length === 0) { %><p class="text-muted-eco">No hay sensores asociados a esta zona.</p><% } %>
-            <div class="row g-3">
+            <div class="d-flex justify-content-between align-items-baseline gap-2">
+                <h4>Mediciones actuales</h4>
+                <span class="small text-muted-eco" data-reading-status>Se actualiza cada 10 segundos</span>
+            </div>
+            <div class="row g-3" data-plantation-readings data-endpoint="/app/plantas/<%= plantacion.ID_plantacion %>/datos">
+            <% if (mediciones.length === 0) { %><div class="col-12"><p class="text-muted-eco mb-0">Esperando lecturas del ESP32...</p></div><% } %>
             <% mediciones.forEach(m => { %>
-                <div class="col-sm-6"><div class="p-3 rounded border"><span class="text-muted-eco small text-capitalize"><%= m.nombre_variable.replace('_', ' ') %></span><strong class="d-block fs-3"><%= Number(m.valor) %> <small class="fs-6 text-muted-eco"><%= m.unidad_medida %></small></strong></div></div>
+                <div class="col-sm-6"><div class="p-3 rounded border"><span class="text-muted-eco small text-capitalize"><%= m.variable.replace('_', ' ') %></span><strong class="d-block fs-3"><%= m.variable === 'movimiento' ? Number(m.valor) !== 0 ? '1/1' : '0/1' : Number(m.valor) %><% if (m.variable !== 'movimiento') { %> <small class="fs-6 text-muted-eco"><%= m.unidad_medida %></small><% } %></strong></div></div>
             <% }) %>
             </div>
             <h5 class="mt-4">Plagas comunes</h5>
@@ -39,4 +42,5 @@
     </div>
 </div>
 
+<script src="/js/plantacion.js" defer></script>
 <%- include('../partials/footer') %>

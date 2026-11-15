@@ -24,15 +24,7 @@ const getZonas = async (usuarioId) => {
 const index = async (req, res) => {
     try {
         const [dispositivos] = await db.query(`
-            SELECT d.ID_dispositivo, d.mac_address, d.nombre, d.tipo_controlador,
-                   d.firmware_version, d.ultima_comunicacion, d.ID_zona,
-                   z.nombre_zona, i.nombre AS invernadero,
-                   d.estado AS estado_configurado,
-                   CASE
-                       WHEN d.estado = 'Mantenimiento' THEN 'Mantenimiento'
-                       WHEN d.estado = 'Online' AND d.ultima_comunicacion >= NOW() - INTERVAL 90 SECOND THEN 'Online'
-                       ELSE 'Offline'
-                   END AS estado,
+            SELECT d.*, z.nombre_zona, i.nombre AS invernadero,
                    (SELECT COUNT(*) FROM sensor s WHERE s.ID_dispositivo = d.ID_dispositivo) AS total_sensores
             FROM dispositivo d
             JOIN zona z ON d.ID_zona = z.ID_zona
@@ -51,15 +43,7 @@ const show = async (req, res) => {
     try {
         const { id } = req.params;
         const [rows] = await db.query(`
-            SELECT d.ID_dispositivo, d.mac_address, d.nombre, d.tipo_controlador,
-                   d.firmware_version, d.ultima_comunicacion, d.ID_zona,
-                   d.estado AS estado_configurado,
-                   CASE
-                       WHEN d.estado = 'Mantenimiento' THEN 'Mantenimiento'
-                       WHEN d.estado = 'Online' AND d.ultima_comunicacion >= NOW() - INTERVAL 90 SECOND THEN 'Online'
-                       ELSE 'Offline'
-                   END AS estado
-            FROM dispositivo d
+            SELECT d.* FROM dispositivo d
             JOIN zona z ON z.ID_zona = d.ID_zona
             JOIN usuario_invernadero ui ON ui.ID_invernadero = z.ID_invernadero
             WHERE d.ID_dispositivo = ? AND ui.ID_usuario = ?`, [id, req.session.usuario.id]);

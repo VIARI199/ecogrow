@@ -23,6 +23,7 @@
             <%- item('/app/zonas', 'grid-3x3-gap', 'Zonas') %>
             <%- item('/especies', 'tree', 'Especies') %>
             <%- item('/app/plantas', 'flower1', 'Mis plantas') %>
+            <%- item('/app/ia', 'stars', 'IA de plantas') %>
             <div class="nav-label">Monitoreo</div>
             <%- item('/app/componentes', 'cpu', 'Componentes') %>
             <%- item('/app/historial', 'graph-up', 'Historial') %>
@@ -65,9 +66,7 @@
 
                 <div class="dropdown">
                     <button class="user-btn" data-bs-toggle="dropdown" aria-expanded="false">
-                        <% if (typeof usuario.imagen_perfil !== 'undefined' && usuario.imagen_perfil) { %>
-                            <img class="avatar avatar-image" src="<%= usuario.imagen_perfil %>" alt="Perfil">
-                        <% } else { %><span class="avatar"><%= iniciales %></span><% } %>
+                        <span class="avatar"><%= iniciales %></span>
                         <span class="d-none d-sm-inline small text-truncate" style="max-width:7rem"><%= usuario.nombre %></span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">

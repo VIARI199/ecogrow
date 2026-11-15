@@ -7,9 +7,16 @@
 
 <div class="col-lg-7 mx-auto">
     <h1 class="mb-4"><%= item.ID_especie ? 'Editar' : 'Nueva' %> especie</h1>
-    <form action="<%= accion %>" method="POST" class="glass p-4">
+    <form action="<%= accion %>" method="POST" class="glass p-4" id="formEspecie">
         <div class="row">
-            <%- campo('nombre_comun', 'Nombre común', 'text') %>
+            <div class="col-md-6 mb-3">
+                <label class="form-label" for="nombre_comun">Nombre común</label>
+                <input type="text" id="nombre_comun" name="nombre_comun" class="form-control" value="<%= item.nombre_comun ?? '' %>" maxlength="50" required>
+                <% if (!item.ID_especie) { %>
+                    <button class="btn btn-outline-light btn-sm mt-2" type="button" id="completarEspecie"><i class="bi bi-stars"></i> Completar datos con IA</button>
+                    <div class="small mt-2" id="estadoCompletado" aria-live="polite"></div>
+                <% } %>
+            </div>
             <%- campo('nombre_cientifico', 'Nombre científico', 'text') %>
             <%- campo('temp_min', 'Temperatura mínima (°C)', 'number', '0.1') %>
             <%- campo('temp_max', 'Temperatura máxima (°C)', 'number', '0.1') %>
@@ -22,5 +29,45 @@
         <a href="/especies" class="btn btn-outline-light">Cancelar</a>
     </form>
 </div>
+
+<% if (!item.ID_especie) { %>
+<script>
+    document.getElementById('completarEspecie').addEventListener('click', async () => {
+        const boton = document.getElementById('completarEspecie');
+        const estado = document.getElementById('estadoCompletado');
+        const nombre = document.getElementById('nombre_comun').value.trim();
+        if (!nombre) {
+            estado.textContent = 'Escribe primero el nombre de la planta.';
+            estado.className = 'small mt-2 text-warning';
+            return;
+        }
+
+        boton.disabled = true;
+        estado.textContent = 'Generando datos de cultivo...';
+        estado.className = 'small mt-2 text-muted-eco';
+        try {
+            const response = await fetch('/especies/completar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre_comun: nombre })
+            });
+            const datos = await response.json();
+            if (!response.ok) throw new Error(datos.error || 'No se pudieron completar los datos.');
+
+            for (const [campo, valor] of Object.entries(datos)) {
+                const input = document.querySelector(`[name="${campo}"]`);
+                if (input) input.value = valor;
+            }
+            estado.textContent = 'Datos completados. Revísalos antes de guardar.';
+            estado.className = 'small mt-2 text-success';
+        } catch (error) {
+            estado.textContent = error.message || 'No se pudieron completar los datos.';
+            estado.className = 'small mt-2 text-warning';
+        } finally {
+            boton.disabled = false;
+        }
+    });
+</script>
+<% } %>
 
 <%- include('../partials/footer') %>

@@ -11,8 +11,9 @@ const obtenerDatos = async (usuarioId, usuarioApp) => {
                        WHEN LOWER(m.nombre_variable) IN ('temperatura', 'temperature') THEN 'temperatura'
                        WHEN LOWER(m.nombre_variable) IN ('humedad ambiental', 'humedad_ambiente', 'humedad ambiente') THEN 'humedad_ambiente'
                        WHEN LOWER(m.nombre_variable) IN ('humedad del suelo', 'humedad_suelo', 'humedad suelo') THEN 'humedad_suelo'
-                       WHEN LOWER(m.nombre_variable) IN ('luz', 'iluminación', 'iluminacion') THEN 'luz'
-                       WHEN LOWER(m.nombre_variable) IN ('calidad del aire', 'calidad_aire', 'co2', 'co₂') THEN 'co2'
+                       WHEN LOWER(m.nombre_variable) IN ('luz', 'ldr', 'iluminación', 'iluminacion') THEN 'luz'
+                       WHEN LOWER(m.nombre_variable) IN ('calidad del aire', 'calidad_aire') THEN 'calidad_aire'
+                       WHEN LOWER(m.nombre_variable) IN ('co2', 'co₂') THEN 'co2'
                        ELSE LOWER(m.nombre_variable)
                    END AS nombre_variable,
                    m.unidad_medida,
@@ -20,20 +21,20 @@ const obtenerDatos = async (usuarioId, usuarioApp) => {
             FROM metrica m
             JOIN sensor s ON m.ID_sensor = s.ID_sensor
             JOIN dispositivo d ON s.ID_dispositivo = d.ID_dispositivo
-                AND d.estado = 'Online'
-                AND d.ultima_comunicacion >= NOW() - INTERVAL 90 SECOND
             JOIN zona z ON d.ID_zona = z.ID_zona
             JOIN invernadero i ON z.ID_invernadero = i.ID_invernadero
             ${acceso}
             JOIN lectura_sensor l ON l.ID_lectura = (
-                SELECT ID_lectura FROM lectura_sensor WHERE ID_metrica = m.ID_metrica
+                SELECT ID_lectura FROM lectura_sensor
+                WHERE ID_metrica = m.ID_metrica
+                  AND fecha_hora >= NOW() - INTERVAL 2 MINUTE
                 ORDER BY fecha_hora DESC LIMIT 1)
             ORDER BY z.nombre_zona, m.nombre_variable
         `, params),
         db.query(`
             SELECT COUNT(DISTINCT i.ID_invernadero) AS invernaderos,
                    COUNT(DISTINCT CASE WHEN p.estado <> 'Finalizado' THEN p.ID_plantacion END) AS plantaciones,
-                   COUNT(DISTINCT CASE WHEN d.estado = 'Online' AND d.ultima_comunicacion >= NOW() - INTERVAL 90 SECOND THEN d.ID_dispositivo END) AS online,
+                   COUNT(DISTINCT CASE WHEN d.estado = 'Online' AND d.ultima_comunicacion >= NOW() - INTERVAL 5 MINUTE THEN d.ID_dispositivo END) AS online,
                    COUNT(DISTINCT d.ID_dispositivo) AS dispositivos,
                    COUNT(DISTINCT CASE WHEN a.estado = 'Nueva' THEN a.ID_alerta END) AS alertas
             FROM invernadero i

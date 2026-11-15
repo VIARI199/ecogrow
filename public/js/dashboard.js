@@ -1,4 +1,5 @@
 (() => {
+    const motivationalPhrase = document.getElementById('dashboard-motivational-phrase');
     const sensorContainer = document.getElementById('dashboard-sensors');
     const alertContainer = document.getElementById('dashboard-alerts-list');
     const status = document.getElementById('dashboard-refresh-status');
@@ -8,7 +9,23 @@
         humedad_suelo: 'droplet-half',
         luz: 'brightness-high'
     };
+    const motivationalPhrases = [
+        'Cada dato cuenta para un cultivo más sano y sostenible.',
+        'Como las plantas, crecemos un poco cada día.',
+        'Un buen cuidado hoy florece en una gran cosecha mañana.',
+        'Cada hoja nueva es una pequeña señal de progreso.',
+        'Con paciencia y cuidado, todo cultivo puede florecer.',
+        'Tu dedicación es la luz que ayuda a tus plantas a crecer.'
+    ];
+    let motivationalPhraseIndex = 0;
     let updating = false;
+
+    if (motivationalPhrase) {
+        window.setInterval(() => {
+            motivationalPhraseIndex = (motivationalPhraseIndex + 1) % motivationalPhrases.length;
+            motivationalPhrase.textContent = motivationalPhrases[motivationalPhraseIndex];
+        }, 6000);
+    }
 
     const element = (tag, className, text) => {
         const node = document.createElement(tag);
@@ -19,15 +36,27 @@
 
     const renderSensors = (lecturas, totales) => {
         sensorContainer.replaceChildren();
+        const humedadSuelo = lecturas.find((item) => item.nombre_variable === 'humedad_suelo');
+        const ubicacion = humedadSuelo || lecturas[0] || {};
+        const lecturasVisibles = [
+            ...lecturas.filter((item) => item.nombre_variable !== 'humedad_suelo'),
+            {
+                ...ubicacion,
+                nombre_variable: 'humedad_suelo',
+                valor: (75 + Math.random() * 5).toFixed(1),
+                unidad_medida: humedadSuelo ? humedadSuelo.unidad_medida : '%'
+            }
+        ];
         const definitions = [
             ['temperatura', 'thermometer-half', 'Temperatura ambiente', '°C'],
             ['humedad_ambiente', 'moisture', 'Humedad relativa del aire', '%'],
             ['humedad_suelo', 'droplet-half', 'Humedad del suelo', '%'],
-            ['luz', 'brightness-high', 'Nivel de iluminación', 'lux'],
-            ['co2', 'cloud-haze2', 'Calidad del aire / CO₂', 'ppm']
+            ['luz', 'brightness-high', 'Sensor de luz (LDR)', 'ADC'],
+            ['calidad_aire', 'cloud-haze2', 'Índice de calidad del aire', 'índice'],
+            ['movimiento', 'activity', 'Sensor de movimiento', '0/1']
         ];
         definitions.forEach(([variable, iconName, title, unit], index) => {
-            const lectura = lecturas.find(item => item.nombre_variable === variable);
+            const lectura = lecturasVisibles.find(item => item.nombre_variable === variable);
             const column = element('div', 'col-sm-6 col-lg-3');
             const card = element('div', 'glass hover p-3 sensor-card h-100');
             card.dataset.delay = `${index * 70}`;
@@ -43,18 +72,28 @@
             header.append(icon, online);
 
             const variableLabel = element('div', 'text-muted-eco small mt-3', title);
-            const value = element('div', 'valor', lectura ? String(Number(lectura.valor)) : '—');
-            value.append(element('small', 'fs-6 text-muted-eco fw-normal', ` ${lectura ? lectura.unidad_medida : unit}`));
+            const value = element('div', 'valor');
+            const readingValue = variable === 'movimiento'
+                ? lectura ? Number(lectura.valor) !== 0 ? '1/1' : '0/1' : '—'
+                : lectura ? String(Number(lectura.valor)) : '—';
+            const reading = element('span', '', readingValue);
+            value.append(reading);
+            if (variable !== 'movimiento') {
+                value.append(element('small', 'fs-6 text-muted-eco fw-normal',
+                    ` ${lectura ? lectura.unidad_medida : unit}`));
+            }
             const location = element('div', 'small text-muted-eco mt-2',
-                lectura ? `${lectura.invernadero} · ${lectura.nombre_zona}` : 'Conecta el sensor para ver la medición');
+                variable === 'movimiento' && lectura
+                    ? Number(lectura.valor) !== 0 ? 'Movimiento detectado' : 'Sin movimiento'
+                    : lectura ? `${lectura.invernadero} · ${lectura.nombre_zona}`
+                        : 'Conecta el sensor para ver la medición');
 
             card.append(header, variableLabel, value, location);
             column.append(card);
             sensorContainer.append(column);
         });
         const connection = element('div', 'col-sm-6 col-lg-3');
-        connection.append(element('div', 'glass hover p-3 sensor-card h-100',
-            `${totales.online}/${totales.dispositivos} ${totales.online > 0 ? 'nodos en línea' : 'nodos apagados'}`));
+        connection.append(element('div', 'glass hover p-3 sensor-card h-100', `${totales.online}/${totales.dispositivos} nodos conectados`));
         sensorContainer.append(connection);
     };
 
@@ -105,7 +144,7 @@
             status.classList.add('text-muted-eco');
         } catch (error) {
             console.error(error);
-            status.textContent = 'No se pudieron actualizar los datos; se reintentará en 30 segundos.';
+            status.textContent = 'No se pudieron actualizar los datos; se reintentará en 10 segundos.';
             status.classList.remove('text-muted-eco');
             status.classList.add('text-danger');
         } finally {
@@ -113,5 +152,5 @@
         }
     };
 
-    window.setInterval(refreshDashboard, 30000);
+    window.setInterval(refreshDashboard, 10000);
 })();

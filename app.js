@@ -18,8 +18,8 @@ app.set('views', path.join(__dirname, 'views'));
 // -----------------------------
 // MIDDLEWARES
 // -----------------------------
-app.use(express.urlencoded({ extended: true, limit: '5mb' }));   // formularios
-app.use(express.json({ limit: '5mb' }));                         // JSON (ESP32)
+app.use(express.urlencoded({ extended: true }));   // formularios
+app.use(express.json());                           // JSON (ESP32)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // -----------------------------

@@ -1,10 +1,72 @@
 const db = require('../config/db');
+const { generarContenido, mensajeError } = require('../config/gemini');
 
 const CAMPOS = ['nombre_comun', 'nombre_cientifico', 'temp_min', 'temp_max',
     'humedad_suelo_min', 'humedad_suelo_max', 'luz_min_lux', 'luz_max_lux'];
+const INSTRUCCIONES_COMPLETAR_ESPECIE = `Completa datos hortícolas orientativos para una especie vegetal cuyo nombre común entrega el usuario. Devuelve exclusivamente un objeto JSON con nombre_cientifico (nombre científico aceptado), temp_min y temp_max en grados Celsius, humedad_suelo_min y humedad_suelo_max como porcentajes enteros, y luz_min_lux y luz_max_lux como lux enteros. Usa rangos razonables para cultivo general, con mínimo menor que máximo y valores dentro de rangos físicamente posibles. No inventes otro nombre común.`;
 
 const valores = (body) => CAMPOS.map((c) => body[c]);
 const incompleto = (body) => CAMPOS.some((c) => body[c] === undefined || body[c] === '');
+
+const completar = async (req, res) => {
+    const nombreComun = typeof req.body.nombre_comun === 'string' ? req.body.nombre_comun.trim() : '';
+    if (!nombreComun || nombreComun.length > 50) {
+        return res.status(400).json({ error: 'Escribe un nombre de planta de hasta 50 caracteres.' });
+    }
+
+    try {
+        const datos = await generarContenido(INSTRUCCIONES_COMPLETAR_ESPECIE, nombreComun, {
+            type: 'OBJECT',
+            properties: {
+                nombre_cientifico: { type: 'STRING' },
+                temp_min: { type: 'NUMBER' },
+                temp_max: { type: 'NUMBER' },
+                humedad_suelo_min: { type: 'INTEGER' },
+                humedad_suelo_max: { type: 'INTEGER' },
+                luz_min_lux: { type: 'INTEGER' },
+                luz_max_lux: { type: 'INTEGER' }
+            },
+            required: ['nombre_cientifico', 'temp_min', 'temp_max', 'humedad_suelo_min',
+                'humedad_suelo_max', 'luz_min_lux', 'luz_max_lux']
+        });
+
+        const numeros = ['temp_min', 'temp_max', 'humedad_suelo_min', 'humedad_suelo_max',
+            'luz_min_lux', 'luz_max_lux'];
+        const rangosValidos = typeof datos.nombre_cientifico === 'string'
+            && datos.nombre_cientifico.trim().length > 0
+            && numeros.every((campo) => typeof datos[campo] === 'number' && Number.isFinite(datos[campo]))
+            && datos.temp_min >= -10 && datos.temp_max <= 60 && datos.temp_min < datos.temp_max
+            && Number.isInteger(datos.humedad_suelo_min) && Number.isInteger(datos.humedad_suelo_max)
+            && datos.humedad_suelo_min >= 0 && datos.humedad_suelo_max <= 100
+            && datos.humedad_suelo_min < datos.humedad_suelo_max
+            && Number.isInteger(datos.luz_min_lux) && Number.isInteger(datos.luz_max_lux)
+            && datos.luz_min_lux >= 0 && datos.luz_max_lux <= 200000
+            && datos.luz_min_lux < datos.luz_max_lux;
+        if (!rangosValidos) {
+            const error = new Error('Gemini devolvió valores fuera de los rangos aceptados.');
+            error.code = 'GEMINI_INVALID_PLANT_DATA';
+            throw error;
+        }
+
+        return res.json({
+            nombre_comun: nombreComun,
+            nombre_cientifico: datos.nombre_cientifico.trim(),
+            temp_min: datos.temp_min,
+            temp_max: datos.temp_max,
+            humedad_suelo_min: datos.humedad_suelo_min,
+            humedad_suelo_max: datos.humedad_suelo_max,
+            luz_min_lux: datos.luz_min_lux,
+            luz_max_lux: datos.luz_max_lux
+        });
+    } catch (error) {
+        console.error('Error al completar datos de especie:', error.code || error.message,
+            error.status ? `(HTTP ${error.status})` : '', error.providerMessage || '');
+        const estado = error.code === 'GEMINI_NOT_CONFIGURED' || error.status === 429 || error.status === 503
+            ? 503
+            : 502;
+        return res.status(estado).json({ error: mensajeError(error) });
+    }
+};
 
 // LISTAR
 const index = async (req, res) => {
@@ -80,4 +142,4 @@ const destroy = async (req, res) => {
     res.redirect('/especies');
 };
 
-module.exports = { index, create, store, edit, update, destroy };
+module.exports = { index, create, completar, store, edit, update, destroy };

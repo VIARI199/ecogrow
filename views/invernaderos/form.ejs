@@ -30,6 +30,18 @@
             <label class="form-label">Descripción</label>
             <textarea name="descripcion" rows="3" class="form-control"><%= item.descripcion || '' %></textarea>
         </div>
+        <% if (!item.ID_invernadero) { %>
+        <div class="mb-3">
+            <label class="form-label">ESP32 para este invernadero</label>
+            <select name="ID_dispositivo" class="form-select">
+                <option value="">Crear sin asignar un ESP32</option>
+                <% dispositivos.forEach(d => { %>
+                    <option value="<%= d.ID_dispositivo %>"><%= d.nombre %> · <%= d.mac_address %> · <%= d.invernadero %> / <%= d.nombre_zona %> · <%= d.estado %></option>
+                <% }) %>
+            </select>
+            <div class="form-text">Al asignarlo, el ESP32 se moverá a una nueva zona de este invernadero.</div>
+        </div>
+        <% } %>
         <button class="btn btn-eco">Guardar</button>
         <a href="/invernaderos" class="btn btn-outline-light">Cancelar</a>
     </form>

@@ -2,12 +2,23 @@ const db = require('../config/db');
 
 const RANGOS = { '24h': 'INTERVAL 24 HOUR', '7d': 'INTERVAL 7 DAY', '30d': 'INTERVAL 30 DAY' };
 
+const variableCanonica = (nombre) => {
+    const normalizado = nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/_/g, ' ').trim().toLowerCase();
+    if (normalizado.startsWith('temperatura') || normalizado === 'temperature') return 'temperatura';
+    if (normalizado.startsWith('humedad ambiental') || normalizado.startsWith('humedad ambiente') || normalizado === 'humidity') return 'humedad_ambiente';
+    if (normalizado.startsWith('humedad del suelo') || normalizado.startsWith('humedad suelo') || normalizado === 'soil moisture') return 'humedad_suelo';
+    if (['luz', 'ldr', 'iluminacion', 'light'].includes(normalizado)) return 'luz';
+    if (normalizado.startsWith('calidad del aire') || normalizado.startsWith('calidad aire') || normalizado === 'co2') return 'calidad_aire';
+    if (normalizado.startsWith('movimiento') || normalizado.startsWith('movement')) return 'movimiento';
+    return normalizado;
+};
+
 // HISTORIAL DE MEDICIONES (tabla + gráfico)
 const index = async (req, res) => {
     try {
         const rango = RANGOS[req.query.rango] ? req.query.rango : '24h';
-        const [metricas] = await db.query(`
-            SELECT m.ID_metrica, m.unidad_medida,
+        const [metricasFilas] = await db.query(`
+            SELECT m.ID_metrica, m.nombre_variable, m.unidad_medida, z.ID_zona,
                    CONCAT(z.nombre_zona, ' · ', m.nombre_variable, ' (', m.unidad_medida, ')') AS nombre
             FROM metrica m
             JOIN sensor s ON m.ID_sensor = s.ID_sensor
@@ -16,7 +27,19 @@ const index = async (req, res) => {
             JOIN usuario_invernadero ui ON ui.ID_invernadero = z.ID_invernadero
             WHERE ui.ID_usuario = ? ORDER BY nombre`, [req.session.usuario.id]);
 
-        const metrica = Number(req.query.metrica) || (metricas[0] && metricas[0].ID_metrica);
+        const metricasUnicas = new Map();
+        for (const fila of metricasFilas) {
+            const clave = `${fila.ID_zona}:${variableCanonica(fila.nombre_variable)}`;
+            const anterior = metricasUnicas.get(clave);
+            if (!anterior || Number(fila.ID_metrica) > Number(anterior.ID_metrica)) {
+                metricasUnicas.set(clave, fila);
+            }
+        }
+        const metricas = [...metricasUnicas.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+        const solicitada = Number(req.query.metrica);
+        const metrica = metricas.some((fila) => Number(fila.ID_metrica) === solicitada)
+            ? solicitada
+            : metricas[0] && metricas[0].ID_metrica;
         let lecturas = [];
         let resumen = null;
         if (metrica) {

@@ -3,19 +3,9 @@ const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
 const db = require('../config/db');
 const mailer = require('../config/mailer');
+const asignarInvernaderoESP32 = require('../config/asignacionUsuario');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-const DOMINIOS_CORREO_PERMITIDOS = new Set([
-    'gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.es', 'outlook.com',
-    'outlook.es', 'live.com', 'yahoo.com', 'yahoo.es', 'icloud.com', 'me.com'
-]);
-
-const correoValido = (correo) => {
-    const partes = correo.split('@');
-    return partes.length === 2 &&
-        /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+$/i.test(partes[0]) &&
-        DOMINIOS_CORREO_PERMITIDOS.has(partes[1].toLowerCase());
-};
 
 const hashResetCode = (code) => {
     const secret = process.env.RESET_CODE_SECRET || process.env.SESSION_SECRET;
@@ -220,15 +210,13 @@ const registroForm = (req, res) => res.render('auth/registro');
 
 // GUARDAR USUARIO NUEVO
 const registro = async (req, res) => {
+    let connection;
+    let transaccionIniciada = false;
     try {
         const { nombre, correo, contrasena, confirmar } = req.body;
         const correoNormalizado = (correo || '').trim().toLowerCase();
         if (!nombre || !correoNormalizado || !contrasena) {
             req.flash('error', 'Todos los campos son obligatorios.');
-            return res.redirect('/registro');
-        }
-        if (!correoValido(correoNormalizado)) {
-            req.flash('error', 'Usa un correo de Gmail, Hotmail, Outlook, Yahoo o iCloud válido.');
             return res.redirect('/registro');
         }
         if (contrasena.length < 6) {
@@ -249,14 +237,28 @@ const registro = async (req, res) => {
         }
         const [roles] = await db.query("SELECT ID_rol FROM rol WHERE nombre_rol = 'Usuario'");
         const hash = await bcrypt.hash(contrasena, 10);
-        await db.query('INSERT INTO usuario (nombre, correo, contrasena_hash, ID_rol) VALUES (?, ?, ?, ?)',
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+        transaccionIniciada = true;
+        const [result] = await connection.query(
+            'INSERT INTO usuario (nombre, correo, contrasena_hash, ID_rol) VALUES (?, ?, ?, ?)',
             [nombre, correoNormalizado, hash, roles[0].ID_rol]);
+        await asignarInvernaderoESP32(connection, result.insertId);
+        await connection.commit();
+        transaccionIniciada = false;
         req.flash('success', 'Cuenta creada. Ya puedes iniciar sesión.');
         res.redirect('/login');
     } catch (error) {
-        console.error(error);
-        req.flash('error', 'Ocurrió un error al crear la cuenta.');
+        if (connection && transaccionIniciada) await connection.rollback();
+        if (error.code !== 'ESP32_NO_CONFIGURADO') console.error(error);
+        req.flash('error', error.code === 'ESP32_NO_CONFIGURADO'
+            ? 'No se pudo crear la cuenta porque el ESP32 actual aún no está registrado.'
+            : error.code === 'ER_DUP_ENTRY'
+                ? 'Ese correo ya está registrado.'
+                : 'Ocurrió un error al crear la cuenta.');
         res.redirect('/registro');
+    } finally {
+        if (connection) connection.release();
     }
 };
 
@@ -290,13 +292,27 @@ const googleAuth = async (req, res) => {
         if (!user) {
             // Primera vez que inicia sesión: se crea como "Usuario"
             const [roles] = await db.query("SELECT ID_rol FROM rol WHERE nombre_rol = 'Usuario'");
-            const [result] = await db.query(
-                'INSERT INTO usuario (nombre, correo, google_id, ID_rol) VALUES (?, ?, ?, ?)',
-                [nombre, correo, googleId, roles[0].ID_rol]);
-            const [nuevo] = await db.query(
-                `SELECT u.*, r.nombre_rol FROM usuario u
-                 JOIN rol r ON u.ID_rol = r.ID_rol WHERE u.ID_usuario = ?`, [result.insertId]);
-            user = nuevo[0];
+            const connection = await db.getConnection();
+            let transaccionIniciada = false;
+            try {
+                await connection.beginTransaction();
+                transaccionIniciada = true;
+                const [result] = await connection.query(
+                    'INSERT INTO usuario (nombre, correo, google_id, ID_rol) VALUES (?, ?, ?, ?)',
+                    [nombre, correo, googleId, roles[0].ID_rol]);
+                await asignarInvernaderoESP32(connection, result.insertId);
+                const [nuevo] = await connection.query(
+                    `SELECT u.*, r.nombre_rol FROM usuario u
+                     JOIN rol r ON u.ID_rol = r.ID_rol WHERE u.ID_usuario = ?`, [result.insertId]);
+                await connection.commit();
+                transaccionIniciada = false;
+                user = nuevo[0];
+            } catch (error) {
+                if (transaccionIniciada) await connection.rollback();
+                throw error;
+            } finally {
+                connection.release();
+            }
         }
 
         if (user.estado !== 'Activo') {
@@ -309,8 +325,10 @@ const googleAuth = async (req, res) => {
         }
         return iniciarSesionUsuario(req, res, user);
     } catch (error) {
-        console.error(error);
-        req.flash('error', 'No se pudo iniciar sesión con Google.');
+        if (error.code !== 'ESP32_NO_CONFIGURADO') console.error(error);
+        req.flash('error', error.code === 'ESP32_NO_CONFIGURADO'
+            ? 'No se pudo crear la cuenta: el ESP32 actual aún no está registrado.'
+            : 'No se pudo iniciar sesión con Google.');
         res.redirect('/login');
     }
 };
@@ -327,6 +345,5 @@ module.exports = {
     registroForm,
     registro,
     googleAuth,
-    logout,
-    correoValido
+    logout
 };

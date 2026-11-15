@@ -2,13 +2,13 @@
 
 <a href="<%= baseUrl %>" class="small">&larr; Volver</a>
 <h1 class="mt-2 mb-0"><%= dispositivo.nombre %></h1>
-<p class="text-muted-eco"><code><%= dispositivo.mac_address %></code> · <%= dispositivo.tipo_controlador %> <%= dispositivo.firmware_version %> · <span class="dot <%= dispositivo.estado === 'Online' ? 'dot-ok' : dispositivo.estado === 'Mantenimiento' ? 'dot-warn' : 'dot-crit' %>"></span><%= dispositivo.estado === 'Offline' ? 'Apagado' : dispositivo.estado %></p>
+<p class="text-muted-eco"><code><%= dispositivo.mac_address %></code> · <%= dispositivo.tipo_controlador %> <%= dispositivo.firmware_version %> · <span class="dot <%= dispositivo.estado === 'Online' ? 'dot-ok' : dispositivo.estado === 'Mantenimiento' ? 'dot-warn' : 'dot-crit' %>"></span><%= dispositivo.estado %></p>
 <div class="glass p-3 mb-3">
     <h4>Componentes asignados</h4>
     <div class="row g-2 small">
         <div class="col-sm-4"><div class="border rounded p-2"><strong>DHT22</strong><br><span class="text-muted-eco">Temperatura y humedad ambiental</span></div></div>
         <div class="col-sm-4"><div class="border rounded p-2"><strong>Higrómetro</strong><br><span class="text-muted-eco">Humedad de raíces</span></div></div>
-        <div class="col-sm-4"><div class="border rounded p-2"><strong>BH1750 / MQ-135</strong><br><span class="text-muted-eco">Luz y calidad del aire</span></div></div>
+        <div class="col-sm-4"><div class="border rounded p-2"><strong>LDR / MQ-135</strong><br><span class="text-muted-eco">Lectura analógica de luz y calidad del aire</span></div></div>
     </div>
 </div>
 
@@ -67,7 +67,7 @@
                     <option value="calidad_aire">calidad_aire</option>
                 </select></div>
             <div class="mb-3"><label class="form-label">Unidad</label>
-                <input name="unidad_medida" class="form-control" placeholder="°C, %, lux" required></div>
+                <input name="unidad_medida" class="form-control" placeholder="°C, %, ADC, lux calibrados" required></div>
             <button class="btn btn-eco w-100">Agregar</button>
         </form>
     </div>

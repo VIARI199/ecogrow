@@ -2,6 +2,38 @@ const db = require('../config/db');
 
 const ESTADOS = ['Germinacion', 'Crecimiento', 'Cosecha', 'Finalizado'];
 
+const variableCanonica = (nombre) => {
+    const normalizado = nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/_/g, ' ').trim().toLowerCase();
+    if (normalizado.startsWith('temperatura') || normalizado === 'temperature') return 'temperatura';
+    if (normalizado.startsWith('humedad ambiental') || normalizado.startsWith('humedad ambiente') || normalizado === 'humidity') return 'humedad_ambiente';
+    if (normalizado.startsWith('humedad del suelo') || normalizado.startsWith('humedad suelo') || normalizado === 'soil moisture') return 'humedad_suelo';
+    if (['luz', 'ldr', 'iluminacion', 'light'].includes(normalizado)) return 'luz';
+    if (normalizado.startsWith('calidad del aire') || normalizado.startsWith('calidad aire') || normalizado === 'co2') return 'calidad_aire';
+    if (normalizado.startsWith('movimiento') || normalizado.startsWith('movement')) return 'movimiento';
+    return normalizado;
+};
+
+const obtenerMediciones = async (idZona) => {
+    const [filas] = await db.query(`
+        SELECT m.nombre_variable, m.unidad_medida, l.valor, l.fecha_hora, l.ID_lectura
+        FROM metrica m
+        JOIN sensor s ON s.ID_sensor = m.ID_sensor
+        JOIN dispositivo d ON d.ID_dispositivo = s.ID_dispositivo
+        JOIN lectura_sensor l ON l.ID_metrica = m.ID_metrica
+        WHERE d.ID_zona = ?
+          AND l.ID_lectura = (
+              SELECT l2.ID_lectura FROM lectura_sensor l2
+              WHERE l2.ID_metrica = m.ID_metrica
+              ORDER BY l2.fecha_hora DESC, l2.ID_lectura DESC LIMIT 1)
+        ORDER BY l.fecha_hora DESC, l.ID_lectura DESC`, [idZona]);
+    const actuales = new Map();
+    for (const fila of filas) {
+        const variable = variableCanonica(fila.nombre_variable);
+        if (!actuales.has(variable)) actuales.set(variable, { ...fila, variable });
+    }
+    return [...actuales.values()];
+};
+
 const opciones = async (usuarioId) => {
     const [especies] = await db.query('SELECT ID_especie, nombre_comun FROM especie ORDER BY nombre_comun');
     const [zonas] = await db.query(`
@@ -49,19 +81,29 @@ const show = async (req, res) => {
                           WHERE ui.ID_invernadero = i.ID_invernadero AND ui.ID_usuario = ?)`,
             [req.params.id, req.session.usuario.id]);
         if (plantaciones.length === 0) return res.status(404).render('404');
-        const [mediciones] = await db.query(`
-            SELECT m.nombre_variable, m.unidad_medida, l.valor, l.fecha_hora
-            FROM metrica m
-            JOIN sensor s ON m.ID_sensor = s.ID_sensor
-            JOIN dispositivo d ON s.ID_dispositivo = d.ID_dispositivo
-            JOIN lectura_sensor l ON l.ID_metrica = m.ID_metrica
-            WHERE d.ID_zona = ? AND l.ID_lectura = (
-                SELECT MAX(l2.ID_lectura) FROM lectura_sensor l2 WHERE l2.ID_metrica = m.ID_metrica)
-            ORDER BY m.nombre_variable`, [plantaciones[0].ID_zona]);
+        const mediciones = await obtenerMediciones(plantaciones[0].ID_zona);
         res.render('plantaciones/show', { plantacion: plantaciones[0], mediciones });
     } catch (error) {
         console.error(error);
         res.status(500).send('Error del servidor');
+    }
+};
+
+const datos = async (req, res) => {
+    try {
+        const [plantaciones] = await db.query(`
+            SELECT p.ID_zona
+            FROM plantacion p
+            JOIN zona z ON z.ID_zona = p.ID_zona
+            JOIN usuario_invernadero ui ON ui.ID_invernadero = z.ID_invernadero
+            WHERE p.ID_plantacion = ? AND ui.ID_usuario = ?`,
+        [req.params.id, req.session.usuario.id]);
+        if (plantaciones.length === 0) return res.status(404).json({ error: 'Plantación no encontrada.' });
+        res.set('Cache-Control', 'no-store');
+        res.json({ mediciones: await obtenerMediciones(plantaciones[0].ID_zona) });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'No se pudieron actualizar las mediciones.' });
     }
 };
 
@@ -152,4 +194,4 @@ const destroy = async (req, res) => {
     res.redirect(req.baseUrl || '/plantaciones');
 };
 
-module.exports = { index, show, create, store, edit, update, destroy };
+module.exports = { index, show, datos, create, store, edit, update, destroy };

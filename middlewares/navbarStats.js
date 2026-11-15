@@ -9,7 +9,7 @@ module.exports = async (req, res, next) => {
             const [[r]] = await db.query(`
                 SELECT
                     (SELECT COUNT(*) FROM alerta WHERE estado = 'Nueva') AS alertas,
-                    (SELECT COUNT(*) FROM dispositivo WHERE estado = 'Online' AND ultima_comunicacion >= NOW() - INTERVAL 90 SECOND) AS online
+                    (SELECT COUNT(*) FROM dispositivo WHERE estado = 'Online' AND ultima_comunicacion >= NOW() - INTERVAL 5 MINUTE) AS online
             `);
             res.locals.alertasNuevas = r ? r.alertas : 0;
             res.locals.dispositivosOnline = r ? r.online : 0;

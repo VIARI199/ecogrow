@@ -4,6 +4,7 @@ const c = require('../controllers/especieController');
 
 router.get('/', c.index);
 router.get('/create', c.create);
+router.post('/completar', c.completar);
 router.post('/create', c.store);
 router.get('/:id/edit', c.edit);
 router.post('/:id/edit', c.update);

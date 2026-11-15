@@ -7,7 +7,7 @@
 
 <div class="mb-4">
     <h1 class="fs-2 mb-1"><%= saludo %>, <%= usuario.nombre %> 🌱</h1>
-    <p class="text-muted-eco mb-2">Cada dato cuenta para un cultivo más sano y sostenible.</p>
+    <p id="dashboard-motivational-phrase" class="text-muted-eco mb-2" aria-live="polite" aria-atomic="true">Cada dato cuenta para un cultivo más sano y sostenible.</p>
     <span class="pill"><span class="dot dot-<%= estadoGeneralClase %> me-0"></span> Sistema: <%= estadoGeneral %></span>
 </div>
 
@@ -29,7 +29,7 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-3">
     <h4 class="mb-0">Telemetría en tiempo real</h4>
-    <span id="dashboard-refresh-status" class="small text-muted-eco">Actualización automática cada 30 segundos</span>
+    <span id="dashboard-refresh-status" class="small text-muted-eco">Se actualiza cada 10 segundos</span>
 </div>
 <div id="dashboard-sensors" class="row g-3 mb-4">
 <% if (ultimas.length === 0) { %>
@@ -39,8 +39,9 @@
         ['temperatura', 'thermometer-half', 'Temperatura ambiente', '°C'],
         ['humedad_ambiente', 'moisture', 'Humedad relativa del aire', '%'],
         ['humedad_suelo', 'droplet-half', 'Humedad del suelo', '%'],
-        ['luz', 'brightness-high', 'Nivel de iluminación', 'lux'],
-        ['co2', 'cloud-haze2', 'Calidad del aire / CO₂', 'ppm']
+        ['luz', 'brightness-high', 'Sensor de luz (LDR)', 'ADC'],
+        ['calidad_aire', 'cloud-haze2', 'Índice de calidad del aire', 'índice'],
+        ['movimiento', 'activity', 'Sensor de movimiento', '0/1']
     ].forEach(([variable, icono, titulo, unidad], n) => {
         const l = ultimas.find(lectura => lectura.nombre_variable === variable);
     %>
@@ -51,8 +52,8 @@
                     <span class="pill" style="padding:.2rem .6rem"><span class="dot <%= l ? 'dot-ok' : 'dot-warn' %> me-0"></span> <%= l ? 'En línea' : 'Sin datos' %></span>
                 </div>
                 <div class="text-muted-eco small mt-3"><%= titulo %></div>
-                <div class="valor"><%= l ? Number(l.valor) : '—' %> <small class="fs-6 text-muted-eco fw-normal"><%= l ? l.unidad_medida : unidad %></small></div>
-                <div class="small text-muted-eco mt-2"><%= l ? `${l.invernadero} · ${l.nombre_zona}` : 'Conecta el sensor para ver la medición' %></div>
+                <div class="valor"><%= variable === 'movimiento' ? l ? Number(l.valor) !== 0 ? '1/1' : '0/1' : '—' : l ? Number(l.valor) : '—' %><% if (variable !== 'movimiento') { %> <small class="fs-6 text-muted-eco fw-normal"><%= l ? l.unidad_medida : unidad %></small><% } %></div>
+                <div class="small text-muted-eco mt-2"><%= variable === 'movimiento' && l ? Number(l.valor) !== 0 ? 'Movimiento detectado' : 'Sin movimiento' : l ? `${l.invernadero} · ${l.nombre_zona}` : 'Conecta el sensor para ver la medición' %></div>
                 <% if (l) { %><div class="small text-muted-eco" style="font-size:.7rem"><%= new Date(l.fecha_hora).toLocaleString('es-CL') %></div><% } %>
             </div>
         </div>
@@ -62,7 +63,7 @@
             <div class="d-flex justify-content-between align-items-start"><span class="icono"><i class="bi bi-broadcast-pin"></i></span><span class="pill" style="padding:.2rem .6rem"><span class="dot <%= totales.online > 0 ? 'dot-ok' : 'dot-crit' %> me-0"></span> <%= totales.online > 0 ? 'En línea' : 'Desconectado' %></span></div>
             <div class="text-muted-eco small mt-3">Conexión del nodo</div>
             <div class="valor"><%= totales.online %>/<%= totales.dispositivos %></div>
-            <div class="small text-muted-eco mt-2"><%= totales.online > 0 ? 'ESP32 transmitiendo datos' : 'ESP32 apagado o sin comunicación' %></div>
+            <div class="small text-muted-eco mt-2">Estado del enlace con el hardware</div>
         </div>
     </div>
 </div>

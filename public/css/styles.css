@@ -333,16 +333,6 @@ a.glass:hover, .glass.hover:hover, .sensor-card:hover, .zona-tile:hover {
     display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 50%;
     background-image: var(--gradient-eco); color: var(--primary-foreground); font-size: .68rem; font-weight: 700;
 }
-.avatar-image { object-fit: cover; }
-.profile-image {
-    display: block;
-    width: 5rem;
-    height: 5rem;
-    object-fit: cover;
-    border-radius: 50%;
-    border: 2px solid var(--primary);
-    box-shadow: var(--shadow-glow);
-}
 .user-btn { display: flex; align-items: center; gap: .5rem; border: 1px solid var(--border); border-radius: .8rem; padding: .3rem .6rem; background: transparent; color: var(--foreground); transition: var(--transition-smooth); }
 .user-btn:hover { border-color: oklch(0.78 0.19 145 / 40%); }
 .app-content { flex: 1; padding: 2rem; }

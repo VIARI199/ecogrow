@@ -1,11 +1,17 @@
 const db = require('../config/db');
 
+const normalizarVariable = (variable) => {
+    const normalizada = variable.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+    return ['luz', 'ldr', 'iluminacion'].includes(normalizada) ? 'luz' : variable.trim();
+};
+
 // =====================================
 // POST /api/lecturas  (lo llama el ESP32)
 // Header:  x-device-key: <DEVICE_KEY del .env>
 // Body JSON:
-// { "mac": "AA:BB:CC:DD:EE:01",
-//   "lecturas": { "temperatura": 24.5, "humedad_ambiente": 68, "humedad_suelo": 55, "luz": 8400 } }
+// { "mac": "B0:3F:D3:6F:52:F4",
+//   "lecturas": { "Temperatura": 24.5, "Humedad ambiental": 68, "Humedad del suelo": 55, "LDR": 2048,
+//                  "Calidad del aire": 30, "Movimiento": 0 } }
 // =====================================
 const registrarLecturas = async (req, res) => {
     try {
@@ -13,41 +19,25 @@ const registrarLecturas = async (req, res) => {
         if (!mac || !lecturas || typeof lecturas !== 'object') {
             return res.status(400).json({ ok: false, error: 'Faltan "mac" o "lecturas"' });
         }
-        const [disp] = await db.query('SELECT ID_dispositivo FROM dispositivo WHERE mac_address = ?', [mac.toUpperCase()]);
+        const [disp] = await db.query('SELECT ID_dispositivo FROM dispositivo WHERE mac_address = ?', [mac.trim().toUpperCase()]);
         if (disp.length === 0) return res.status(404).json({ ok: false, error: 'Dispositivo no registrado' });
         const idDispositivo = disp[0].ID_dispositivo;
 
         const guardadas = [];
         for (const [variable, valor] of Object.entries(lecturas)) {
+            const variableNormalizada = normalizarVariable(variable);
             const [met] = await db.query(`
-                SELECT m.ID_metrica FROM metrica m JOIN sensor s ON m.ID_sensor = s.ID_sensor
-                WHERE s.ID_dispositivo = ? AND m.nombre_variable = ?`, [idDispositivo, variable]);
+                SELECT m.ID_metrica, m.nombre_variable FROM metrica m
+                JOIN sensor s ON m.ID_sensor = s.ID_sensor
+                WHERE s.ID_dispositivo = ?
+                  AND (LOWER(m.nombre_variable) = LOWER(?)
+                       OR (? = 'luz' AND LOWER(m.nombre_variable) IN ('luz', 'ldr', 'iluminación', 'iluminacion')))`,
+                [idDispositivo, variableNormalizada, variableNormalizada]);
             if (met.length === 0 || isNaN(Number(valor))) continue;
             const [r] = await db.query('INSERT INTO lectura_sensor (valor, ID_metrica) VALUES (?, ?)', [Number(valor), met[0].ID_metrica]);
             guardadas.push(variable);
             await revisarReglas(met[0].ID_metrica, Number(valor), r.insertId);
-            await revisarUmbrales(variable, met[0].ID_metrica, Number(valor), r.insertId);
-        }
-
-        const [metricasEsperadas] = await db.query(`
-            SELECT m.nombre_variable, s.modelo
-            FROM metrica m
-            JOIN sensor s ON s.ID_sensor = m.ID_sensor
-            WHERE s.ID_dispositivo = ?`, [idDispositivo]);
-        const recibidas = new Set(Object.keys(lecturas).map((variable) => variable.toLowerCase()));
-        for (const metrica of metricasEsperadas) {
-            if (recibidas.has(metrica.nombre_variable.toLowerCase())) continue;
-            const tipo = 'Sensor desconectado';
-            const [abiertas] = await db.query(`
-                SELECT ID_alerta FROM alerta
-                WHERE tipo_alerta = ? AND mensaje LIKE ? AND estado IN ('Nueva', 'Reconocida')
-                LIMIT 1`, [tipo, `%${mac.toUpperCase()}%${metrica.nombre_variable}%`]);
-            if (abiertas.length === 0) {
-                await db.query(
-                    `INSERT INTO alerta (tipo_alerta, mensaje, nivel_urgencia, estado)
-                     VALUES (?, ?, 'Alta', 'Nueva')`,
-                    [tipo, `El sensor ${metrica.modelo} (${metrica.nombre_variable}) del nodo ${mac.toUpperCase()} no envió datos.`]);
-            }
+            await revisarUmbrales(met[0].nombre_variable, met[0].ID_metrica, Number(valor), r.insertId);
         }
 
         await db.query("UPDATE dispositivo SET estado = 'Online', ultima_comunicacion = NOW() WHERE ID_dispositivo = ?", [idDispositivo]);

@@ -17,9 +17,7 @@ const isAuth = async (req, res, next) => {
             req.flash('error', 'Tu cuenta fue suspendida o dada de baja. Contacta al administrador.');
             return res.redirect('/login');
         }
-        req.session.usuario.rol = rows[0].nombre_rol;
-        const [perfil] = await db.query('SELECT imagen_perfil FROM usuario WHERE ID_usuario = ?', [req.session.usuario.id]);
-        req.session.usuario.imagen_perfil = perfil[0] ? perfil[0].imagen_perfil : null;
+        req.session.usuario.rol = rows[0].nombre_rol;   // si le cambiaron el rol, se aplica de inmediato
         next();
     } catch (error) {
         console.error(error);

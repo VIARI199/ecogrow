@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const db = require('../config/db');
-const { correoValido } = require('./authController');
+const asignarInvernaderoESP32 = require('../config/asignacionUsuario');
 
 const registrarAuditoria = async (req, accion, descripcion) => {
     try {
@@ -13,47 +13,15 @@ const registrarAuditoria = async (req, accion, descripcion) => {
     }
 };
 
-const detectarNodosSinComunicacion = async () => {
-    const [nodos] = await db.query(`
-        SELECT d.ID_dispositivo, d.nombre, d.ultima_comunicacion, i.nombre AS invernadero
-        FROM dispositivo d
-        JOIN zona z ON z.ID_zona = d.ID_zona
-        JOIN invernadero i ON i.ID_invernadero = z.ID_invernadero
-        WHERE d.ultima_comunicacion IS NULL
-           OR d.ultima_comunicacion < NOW() - INTERVAL 90 SECOND`);
-    for (const nodo of nodos) {
-        await db.query(`
-            UPDATE dispositivo
-            SET estado = CASE WHEN estado = 'Mantenimiento' THEN estado ELSE 'Offline' END
-            WHERE ID_dispositivo = ?`, [nodo.ID_dispositivo]);
-        const [abiertas] = await db.query(`
-            SELECT ID_alerta FROM alerta
-            WHERE tipo_alerta = 'Nodo desconectado'
-              AND mensaje LIKE ?
-              AND estado IN ('Nueva', 'Reconocida')
-            LIMIT 1`, [`%${nodo.nombre}%`]);
-        if (abiertas.length === 0) {
-            const detalle = nodo.ultima_comunicacion
-                ? `Última comunicación: ${new Date(nodo.ultima_comunicacion).toLocaleString('es-CL')}.`
-                : 'No existe comunicación registrada.';
-            await db.query(
-                `INSERT INTO alerta (tipo_alerta, mensaje, nivel_urgencia, estado)
-                 VALUES ('Nodo desconectado', ?, 'Alta', 'Nueva')`,
-                [`El nodo ${nodo.nombre} dejó de enviar datos en ${nodo.invernadero}. ${detalle}`]);
-        }
-    }
-};
-
 // PANEL ADMIN: resumen del sistema
 const index = async (req, res) => {
     try {
-        await detectarNodosSinComunicacion();
-        const [[stats], [dispositivos], [acciones], [alertas]] = await Promise.all([
+        const [[stats], [dispositivos], [acciones]] = await Promise.all([
             db.query(`
             SELECT (SELECT COUNT(*) FROM usuario) AS usuarios,
                    (SELECT COUNT(*) FROM usuario WHERE estado = 'Activo') AS activos,
                    (SELECT COUNT(*) FROM dispositivo
-                    WHERE estado = 'Online' AND ultima_comunicacion >= NOW() - INTERVAL 90 SECOND) AS online,
+                    WHERE estado = 'Online' AND ultima_comunicacion >= NOW() - INTERVAL 5 MINUTE) AS online,
                    (SELECT COUNT(*) FROM dispositivo) AS dispositivos,
                    (SELECT COUNT(*) FROM sensor WHERE estado = 'Activo') AS sensores,
                    (SELECT COUNT(*) FROM alerta
@@ -61,7 +29,7 @@ const index = async (req, res) => {
             db.query(`
             SELECT d.ID_dispositivo, d.nombre, d.mac_address, d.firmware_version, d.estado, d.ultima_comunicacion,
                    z.nombre_zona, i.nombre AS invernadero,
-                   (d.estado = 'Online' AND d.ultima_comunicacion >= NOW() - INTERVAL 90 SECOND) AS enlace,
+                   (d.estado = 'Online' AND d.ultima_comunicacion >= NOW() - INTERVAL 5 MINUTE) AS enlace,
                    (SELECT GROUP_CONCAT(s.modelo SEPARATOR ', ') FROM sensor s
                     WHERE s.ID_dispositivo = d.ID_dispositivo) AS sensores,
                    (SELECT GROUP_CONCAT(a.nombre SEPARATOR ', ') FROM actuador a
@@ -76,16 +44,8 @@ const index = async (req, res) => {
             JOIN actuador ac ON a.ID_actuador = ac.ID_actuador
             ORDER BY a.fecha_creacion DESC, a.ID_accion DESC
             LIMIT 10`)
-            ,
-            db.query(`
-            SELECT tipo_alerta, mensaje, nivel_urgencia, fecha_hora
-            FROM alerta
-            WHERE estado IN ('Nueva', 'Reconocida')
-              AND tipo_alerta IN ('Nodo desconectado', 'Sensor desconectado')
-            ORDER BY fecha_hora DESC
-            LIMIT 8`)
         ]);
-        res.render('admin/index', { stats, dispositivos, acciones, alertas });
+        res.render('admin/index', { stats, dispositivos, acciones });
     } catch (error) {
         console.error(error);
         res.status(500).send('Error del servidor');
@@ -108,26 +68,37 @@ const usuarios = async (req, res) => {
 
 // CREAR USUARIO
 const storeUsuario = async (req, res) => {
+    let connection;
+    let transaccionIniciada = false;
     try {
         const { nombre, correo, contrasena, ID_rol } = req.body;
-        const correoNormalizado = (correo || '').trim().toLowerCase();
-        if (!nombre || !correoNormalizado || !contrasena || !ID_rol) {
+        if (!nombre || !correo || !contrasena || !ID_rol) {
             req.flash('error', 'Todos los campos son obligatorios.');
             return res.redirect('/admin/usuarios');
         }
-        if (!correoValido(correoNormalizado)) {
-            req.flash('error', 'Usa un correo de Gmail, Hotmail, Outlook, Yahoo o iCloud válido.');
-            return res.redirect('/admin/usuarios');
-        }
         const hash = await bcrypt.hash(contrasena, 10);
-        await db.query('INSERT INTO usuario (nombre, correo, contrasena_hash, ID_rol) VALUES (?, ?, ?, ?)',
-            [nombre, correoNormalizado, hash, ID_rol]);
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+        transaccionIniciada = true;
+        const [result] = await connection.query(
+            'INSERT INTO usuario (nombre, correo, contrasena_hash, ID_rol) VALUES (?, ?, ?, ?)',
+            [nombre, correo, hash, ID_rol]);
+        await asignarInvernaderoESP32(connection, result.insertId);
+        await connection.commit();
+        transaccionIniciada = false;
         const [[rol]] = await db.query('SELECT nombre_rol FROM rol WHERE ID_rol = ?', [ID_rol]);
-        await registrarAuditoria(req, 'Crear usuario', `Creó la cuenta de ${nombre} (${correoNormalizado}) con rol ${rol.nombre_rol}.`);
+        await registrarAuditoria(req, 'Crear usuario', `Creó la cuenta de ${nombre} (${correo}) con rol ${rol.nombre_rol}.`);
         req.flash('success', 'Usuario creado correctamente.');
     } catch (error) {
-        console.error(error);
-        req.flash('error', error.code === 'ER_DUP_ENTRY' ? 'Ese correo ya existe.' : 'Error al crear usuario.');
+        if (connection && transaccionIniciada) await connection.rollback();
+        if (error.code !== 'ESP32_NO_CONFIGURADO') console.error(error);
+        req.flash('error', error.code === 'ESP32_NO_CONFIGURADO'
+            ? 'No se pudo crear la cuenta porque el ESP32 actual aún no está registrado.'
+            : error.code === 'ER_DUP_ENTRY'
+                ? 'Ese correo ya existe.'
+                : 'Error al crear usuario.');
+    } finally {
+        if (connection) connection.release();
     }
     res.redirect('/admin/usuarios');
 };
@@ -308,7 +279,7 @@ const automatizacion = async (req, res) => {
         const [actuadores] = await db.query(`
             SELECT a.ID_actuador, a.nombre, a.tipo, a.estado, d.nombre AS dispositivo,
                    z.nombre_zona, i.nombre AS invernadero,
-                   (d.estado = 'Online' AND d.ultima_comunicacion >= NOW() - INTERVAL 90 SECOND) AS enlace
+                   (d.estado = 'Online' AND d.ultima_comunicacion >= NOW() - INTERVAL 5 MINUTE) AS enlace
             FROM actuador a
             JOIN dispositivo d ON a.ID_dispositivo = d.ID_dispositivo
             JOIN zona z ON d.ID_zona = z.ID_zona
@@ -379,7 +350,7 @@ const controlarActuador = async (req, res) => {
         }
         const [rows] = await db.query(`
             SELECT a.ID_actuador, a.nombre, d.nombre AS dispositivo,
-                   (d.estado = 'Online' AND d.ultima_comunicacion >= NOW() - INTERVAL 90 SECOND) AS enlace
+                   (d.estado = 'Online' AND d.ultima_comunicacion >= NOW() - INTERVAL 5 MINUTE) AS enlace
             FROM actuador a JOIN dispositivo d ON a.ID_dispositivo = d.ID_dispositivo
             WHERE a.ID_actuador = ?`, [id]);
         if (rows.length === 0) {

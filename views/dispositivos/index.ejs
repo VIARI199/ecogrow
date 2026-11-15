@@ -18,7 +18,7 @@
                 <td><code><%= d.mac_address %></code></td>
                 <td><%= d.invernadero %> · <%= d.nombre_zona %></td>
                 <td><%= d.total_sensores %></td>
-                <td><span class="dot <%= d.estado === 'Online' ? 'dot-ok' : d.estado === 'Offline' ? 'dot-crit' : 'dot-warn' %>"></span><%= d.estado === 'Offline' ? 'Apagado' : d.estado %></td>
+                <td><span class="dot <%= d.estado === 'Online' ? 'dot-ok' : d.estado === 'Offline' ? 'dot-crit' : 'dot-warn' %>"></span><%= d.estado %></td>
                 <td class="small"><%= d.ultima_comunicacion ? new Date(d.ultima_comunicacion).toLocaleString('es-CL') : '—' %></td>
                 <td class="text-end text-nowrap">
                     <a href="/dispositivos/<%= d.ID_dispositivo %>/edit" class="btn btn-sm btn-outline-light">Editar</a>

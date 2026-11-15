@@ -20,29 +20,98 @@ const index = async (req, res) => {
 };
 
 // FORMULARIO CREAR
-const create = (req, res) => {
-    res.render('invernaderos/form', { item: {}, estados: ESTADOS, accion: `${req.baseUrl}/create` });
+const getDispositivos = async (usuarioId) => {
+    const [dispositivos] = await db.query(`
+        SELECT d.ID_dispositivo, d.nombre, d.mac_address, d.estado,
+               i.nombre AS invernadero, z.nombre_zona
+        FROM dispositivo d
+        JOIN zona z ON z.ID_zona = d.ID_zona
+        JOIN invernadero i ON i.ID_invernadero = z.ID_invernadero
+        JOIN usuario_invernadero ui ON ui.ID_invernadero = i.ID_invernadero
+        WHERE ui.ID_usuario = ? AND LOWER(d.tipo_controlador) LIKE '%esp32%'
+        ORDER BY d.ID_dispositivo`, [usuarioId]);
+    return dispositivos;
+};
+
+const create = async (req, res) => {
+    try {
+        res.render('invernaderos/form', {
+            item: {}, estados: ESTADOS, dispositivos: await getDispositivos(req.session.usuario.id),
+            accion: `${req.baseUrl}/create`
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error del servidor');
+    }
 };
 
 // GUARDAR
 const store = async (req, res) => {
+    let connection;
+    let transaccionIniciada = false;
     try {
-        const { nombre, ubicacion, fecha_creacion, descripcion, estado } = req.body;
+        const { nombre, ubicacion, fecha_creacion, descripcion, estado, ID_dispositivo } = req.body;
+        let invernaderoOrigen;
         if (!nombre || !ubicacion || !fecha_creacion) {
             req.flash('error', 'Nombre, ubicación y fecha son obligatorios.');
             return res.redirect(`${req.baseUrl}/create`);
         }
-        const [result] = await db.query(
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+        transaccionIniciada = true;
+
+        if (ID_dispositivo) {
+            const [dispositivos] = await connection.query(`
+                SELECT d.ID_dispositivo, ui.ID_invernadero AS invernadero_origen
+                FROM dispositivo d
+                JOIN zona z ON z.ID_zona = d.ID_zona
+                JOIN usuario_invernadero ui ON ui.ID_invernadero = z.ID_invernadero
+                WHERE d.ID_dispositivo = ? AND ui.ID_usuario = ?
+                  AND LOWER(d.tipo_controlador) LIKE '%esp32%'
+                FOR UPDATE`,
+            [ID_dispositivo, req.session.usuario.id]);
+            if (dispositivos.length === 0) {
+                await connection.rollback();
+                transaccionIniciada = false;
+                req.flash('error', 'Selecciona un ESP32 registrado y asociado a tu cuenta.');
+                return res.redirect(`${req.baseUrl}/create`);
+            }
+            invernaderoOrigen = dispositivos[0].invernadero_origen;
+        }
+
+        const [result] = await connection.query(
             'INSERT INTO invernadero (nombre, ubicacion, fecha_creacion, descripcion, estado) VALUES (?, ?, ?, ?, ?)',
             [nombre, ubicacion, fecha_creacion, descripcion || null, estado || 'Activo']);
-        // El creador queda como propietario
-        await db.query(
+        await connection.query(
             "INSERT INTO usuario_invernadero (ID_usuario, ID_invernadero, rol_en_invernadero) VALUES (?, ?, 'Propietario')",
             [req.session.usuario.id, result.insertId]);
-        req.flash('success', 'Invernadero creado correctamente.');
+
+        if (ID_dispositivo) {
+            await connection.query(`
+                INSERT INTO usuario_invernadero (ID_usuario, ID_invernadero, rol_en_invernadero)
+                SELECT ID_usuario, ?, rol_en_invernadero
+                FROM usuario_invernadero
+                WHERE ID_invernadero = ? AND ID_usuario <> ?`,
+            [result.insertId, invernaderoOrigen, req.session.usuario.id]);
+
+            const [zona] = await connection.query(
+                'INSERT INTO zona (nombre_zona, descripcion, ID_invernadero) VALUES (?, ?, ?)',
+                ['Zona ESP32', 'Zona creada para el ESP32 seleccionado', result.insertId]);
+            await connection.query('UPDATE dispositivo SET ID_zona = ? WHERE ID_dispositivo = ?',
+                [zona.insertId, ID_dispositivo]);
+        }
+
+        await connection.commit();
+        transaccionIniciada = false;
+        req.flash('success', ID_dispositivo
+            ? 'Invernadero creado y ESP32 asignado a su nueva zona.'
+            : 'Invernadero creado correctamente.');
     } catch (error) {
         console.error(error);
+        if (connection && transaccionIniciada) await connection.rollback();
         req.flash('error', 'Ocurrió un error al crear el invernadero.');
+    } finally {
+        if (connection) connection.release();
     }
     res.redirect(req.baseUrl);
 };
